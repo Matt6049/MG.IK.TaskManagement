@@ -1,6 +1,8 @@
 using System.Diagnostics;
+using KanbanTaskManagement.Data;
 using KanbanTaskManagement.Models;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Driver;
 
 namespace KanbanTaskManagement.Controllers
 {
@@ -13,8 +15,9 @@ namespace KanbanTaskManagement.Controllers
             _logger = logger;
         }
 
-        public IActionResult Index()
+        public IActionResult Index([FromServices] MongoDBContext context)
         {
+            ViewData["test"] = context.TableCollection.Find<Table>(Builders<Table>.Filter.Eq(t => t.idk, "123")).ToList()[0].Id;
             return View();
         }
 
