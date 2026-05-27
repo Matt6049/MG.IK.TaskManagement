@@ -17,8 +17,7 @@ namespace KanbanTaskManagement.Controllers
 
         public IActionResult Index([FromServices] MongoDBContext context)
         {
-            ViewData["test"] = context.TableCollection;
-            return View();
+            return View(context.BoardCollection.Find(Builders<Board>.Filter.Eq(b => b.IsUserOwned, true)).First());
         }
 
         public IActionResult Privacy()

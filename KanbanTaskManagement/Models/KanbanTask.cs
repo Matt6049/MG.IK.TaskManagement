@@ -5,7 +5,7 @@ namespace KanbanTaskManagement.Models;
 
 public enum TaskPriority {
 	LOW,
-	MEDIUM,
+	MEDIUM,g
 	HIGH
 }
 
