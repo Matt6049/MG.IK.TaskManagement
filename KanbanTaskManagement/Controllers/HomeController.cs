@@ -17,7 +17,7 @@ namespace KanbanTaskManagement.Controllers
 
         public IActionResult Index([FromServices] MongoDBContext context)
         {
-            ViewData["test"] = context.TableCollection.Find<Table>(Builders<Table>.Filter.Eq(t => t.idk, "123")).ToList()[0].Id;
+            ViewData["test"] = context.TableCollection;
             return View();
         }
 
