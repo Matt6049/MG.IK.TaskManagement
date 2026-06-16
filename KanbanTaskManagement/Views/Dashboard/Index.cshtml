@@ -1,0 +1,54 @@
+﻿@model IEnumerable<KanbanTaskManagement.Models.Board>
+
+<style>
+    .board-header {
+        transition: background 0.3s ease-in-out;
+        background: linear-gradient(to right, #008080 0%, #000000 100%);
+        color: white;
+        text-decoration: none;
+        display: block;
+    }
+
+        .board-header:hover {
+            background: linear-gradient(to right, #008080 0%, #20b2aa 100%) !important;
+            color: white;
+        }
+</style>
+
+<div class="container-fluid p-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <input type="text" id="boardSearch" class="form-control form-control-lg border-2"
+                   placeholder="Wyszukaj tablicę po nazwie..." onkeyup="filterBoards()">
+        </div>
+    </div>
+
+    <div id="boardList">
+        @foreach (var board in Model)
+        {
+            <a asp-controller="Board" asp-action="Index" asp-route-id="@board.Id"
+               class="card mb-3 shadow-sm border-0 board-item text-decoration-none">
+                <div class="card-header pt-3 pb-3 board-header d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0 board-name">
+                        <i class="bi bi-kanban-fill me-2"></i>@board.Name
+                    </h5>
+                    <i class="bi bi-arrow-right"></i>
+                </div>
+            </a>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function filterBoards() {
+            var input = document.getElementById('boardSearch').value.toLowerCase();
+            var boards = document.querySelectorAll('.board-item');
+
+            boards.forEach(function(board) {
+                var name = board.querySelector('.board-name').innerText.toLowerCase();
+                board.style.display = name.includes(input) ? "" : "none";
+            });
+        }
+    </script>
+}

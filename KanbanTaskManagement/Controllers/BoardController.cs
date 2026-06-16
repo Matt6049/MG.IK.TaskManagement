@@ -1,28 +1,36 @@
 ﻿using KanbanTaskManagement.Data;
-using KanbanTaskManagement.Models;
 using Microsoft.AspNetCore.Mvc;
-using MongoDB.Bson;
 using MongoDB.Driver;
+using MongoDB.Bson;
+
 
 namespace KanbanTaskManagement.Controllers;
-public class BoardController : Controller {
-	private readonly MongoDBContext Context;
 
-	public BoardController(MongoDBContext context) {
-		Context = context;
-	}
+public class BoardController : Controller
+{
+    private readonly MongoDBContext Context;
 
-	public async Task<IActionResult> Index(string id) {
-		if(!ObjectId.TryParse(id, out ObjectId boardId)) {
-			return BadRequest("Invalid Board ID format");
-		}
+    public BoardController(MongoDBContext context)
+    {
+        Context = context;
+    }
 
-		Board board = Context
-			.BoardCollection
-			.Find(Builders<Board>.Filter.Eq(board => board.Id, boardId)).FirstOrDefault();
-		
-		if(board == null)
-			return BadRequest("Board not found");
-		return View(board);
-	}
+    // Zmieniamy na publiczny GET (domyślnie)
+    public async Task<IActionResult> Index(string id)
+    {
+
+        if (string.IsNullOrEmpty(id))
+        {
+            return RedirectToAction("Index", "Dashboard");
+        }
+
+        // Pobieramy konkretną tablicę po jej ID
+        var board = await Context.BoardCollection
+            .Find(b => b.Id == ObjectId.Parse(id))
+            .FirstOrDefaultAsync();
+
+        if (board == null) return NotFound();
+
+        return View(board);
+    }
 }

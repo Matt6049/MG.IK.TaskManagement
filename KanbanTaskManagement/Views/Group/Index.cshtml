@@ -1,4 +1,5 @@
 ﻿@model List<KanbanTaskManagement.Models.Group>
+
 <style>
     .group-header {
         transition: background 0.4s ease-in-out;
@@ -8,50 +9,56 @@
     .card:has(.collapse.show) .group-header {
         background: linear-gradient(to right, #008080 0%, #20b2aa 100%) !important;
     }
+
+    .btn-black {
+        background-color: #000000;
+        border: 1px solid #444;
+        color: white;
+    }
+
+        .btn-black:hover {
+            background-color: #1a1a1a;
+            color: white;
+            border-color: #666;
+        }
 </style>
 
 <div class="container-fluid p-4">
     <div class="row mb-4">
-        <div class="col-md-9">
-            <input type="text" id="groupSearch" class="form-control form-control-lg border-2"
-                   placeholder="Wyszukaj grupę po nazwie..." onkeyup="filterGroups()">
+        <div class="col-md-6">
+            <input type="text" id="groupSearch" class="form-control form-control-lg bg-dark text-white border-secondary" placeholder="Wyszukaj grupę..." onkeyup="filterGroups()">
         </div>
-        <div class="col-md-3 text-md-end">
-            <button class="btn btn-outline-secondary btn-lg w-100" onclick="collapseAll()">Zwiń wszystko</button>
+        <div class="col-md-6 text-md-end">
+            <button class="btn btn-black btn-lg" data-bs-toggle="modal" data-bs-target="#createGroupModal">
+                <i class="bi bi-plus-circle"></i> Nowa Grupa
+            </button>
         </div>
     </div>
 
     @foreach (var group in Model)
     {
         string collapseId = "group-" + group.Id;
-
         <div class="card mb-3 shadow-sm border-0 overflow-hidden group-item">
-            <div class="card-header text-white border-0 pt-3 pb-3 group-header"
-                 style="cursor: pointer;"
-                 data-bs-toggle="collapse"
-                 data-bs-target="#@collapseId"
-                 aria-expanded="false">
-
+            <div class="card-header text-white border-0 pt-3 pb-3 group-header" style="cursor: pointer;"
+                 data-bs-toggle="collapse" data-bs-target="#@collapseId">
                 <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="fw-bold mb-0 group-name">
-                            <i class="bi bi-people-fill me-2"></i>@group.Name
-                        </h5>
-                        <small class="text-white-50">Utworzono: @group.CreatedAt.ToString("dd.MM.yyyy")</small>
+                    <h5 class="fw-bold mb-0 group-name"><i class="bi bi-people-fill me-2"></i>@group.Name</h5>
+                    <div class="d-flex gap-2" onclick="event.stopPropagation()">
+                        <button class="btn btn-sm btn-outline-light" data-bs-toggle="modal" data-bs-target="#addUserModal" data-bs-groupid="@group.Id">
+                            <i class="bi bi-person-plus"></i>
+                        </button>
+                        <form asp-controller="Group" asp-action="Delete" method="post" class="d-inline">
+                            <input type="hidden" name="id" value="@group.Id" />
+                            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash-fill"></i></button>
+                        </form>
                     </div>
-                    <i class="bi bi-chevron-down"></i>
                 </div>
             </div>
-
             <div class="collapse" id="@collapseId">
-                <div class="card-body p-0 border-top">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light text-uppercase small text-muted">
-                            <tr>
-                                <th class="ps-4">Użytkownik</th>
-                                <th>Rola</th>
-                                <th class="pe-4">Ostatnia aktywność</th>
-                            </tr>
+                <div class="card-body p-0 border-top border-secondary">
+                    <table class="table table-dark table-hover align-middle mb-0">
+                        <thead class="text-uppercase small text-muted">
+                            <tr><th class="ps-4">Użytkownik</th><th>Rola</th><th class="text-end pe-4">Akcje</th></tr>
                         </thead>
                         <tbody>
                             @foreach (var member in group.Members)
@@ -59,6 +66,13 @@
                                 <tr>
                                     <td class="ps-4">@member.Username</td>
                                     <td><span class="badge" style="background-color: #008080;">@member.Role</span></td>
+                                    <td class="text-end pe-4">
+                                        <form asp-controller="Group" asp-action="RemoveMember" method="post">
+                                            <input type="hidden" name="groupId" value="@group.Id" />
+                                            <input type="hidden" name="username" value="@member.Username" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                        </form>
+                                    </td>
                                 </tr>
                             }
                         </tbody>
@@ -69,22 +83,41 @@
     }
 </div>
 
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form asp-controller="Group" asp-action="AddMember" class="modal-content bg-dark text-white border-secondary">
+            <div class="modal-header border-secondary"><h5 class="modal-title">Dodaj użytkownika</h5></div>
+            <div class="modal-body">
+                <input type="hidden" name="groupId" id="modalGroupId" />
+                <input type="text" name="username" class="form-control bg-dark text-white border-secondary" placeholder="Nazwa użytkownika" required />
+            </div>
+            <div class="modal-footer border-secondary"><button type="submit" class="btn btn-black">Zapisz</button></div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="createGroupModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form asp-controller="Group" asp-action="Create" class="modal-content bg-dark text-white border-secondary">
+            <div class="modal-header border-secondary"><h5 class="modal-title">Stwórz nową grupę</h5></div>
+            <div class="modal-body">
+                <input type="text" name="name" class="form-control bg-dark text-white border-secondary" placeholder="Nazwa grupy" required />
+            </div>
+            <div class="modal-footer border-secondary"><button type="submit" class="btn btn-black">Utwórz</button></div>
+        </form>
+    </div>
+</div>
+
 @section Scripts {
     <script>
-        function collapseAll() {
-            document.querySelectorAll('.collapse.show').forEach(function(el) {
-                var bsCollapse = new bootstrap.Collapse(el);
-                bsCollapse.hide();
-            });
-        }
+        document.getElementById('addUserModal').addEventListener('show.bs.modal', function (e) {
+            document.getElementById('modalGroupId').value = e.relatedTarget.getAttribute('data-bs-groupid');
+        });
 
         function filterGroups() {
             var input = document.getElementById('groupSearch').value.toLowerCase();
-            var groups = document.querySelectorAll('.group-item');
-
-            groups.forEach(function(group) {
-                var name = group.querySelector('.group-name').innerText.toLowerCase();
-                group.style.display = name.includes(input) ? "" : "none";
+            document.querySelectorAll('.group-item').forEach(g => {
+                g.style.display = g.querySelector('.group-name').innerText.toLowerCase().includes(input) ? "" : "none";
             });
         }
     </script>
