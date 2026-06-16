@@ -9,7 +9,7 @@ public class User {
 	[BsonRequired]
 	public required string Username { get; set; }
 
-	public string? Email { get; set; } = null!;
+	public string? Email { get; set; } = null;
 
 	[BsonRequired]
 	public required string PasswordHash { get; set; }
@@ -21,6 +21,6 @@ public class User {
 	[BsonDateTimeOptions(
 		Kind = DateTimeKind.Utc,
 		Representation = BsonType.DateTime)]
-	public DateTime Created_at { get; set; }
+	public DateTime CreatedAt { get; set; }
 }
 
