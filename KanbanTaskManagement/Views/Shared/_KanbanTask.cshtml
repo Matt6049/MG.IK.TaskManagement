@@ -3,7 +3,24 @@
 <div class="kanban-task">
 	<div class="card-header">
 		<h4>@Model.Name</h4>
-		<span class="badge">@Model.Priority</span>
+		@switch (Model.Priority)
+		{
+			case TaskPriority.HIGH:
+				<span class="badge bg-danger">
+					@Model.Priority
+				</span>
+				break;
+			case TaskPriority.MEDIUM:
+				<span class="badge bg-warning">
+					@Model.Priority
+				</span>
+				break;
+			case TaskPriority.LOW:
+				<span class="badge bg-info">
+					@Model.Priority
+				</span>
+			break;
+		}
 	</div>
 	@if (!string.IsNullOrEmpty(Model.Description))
 	{

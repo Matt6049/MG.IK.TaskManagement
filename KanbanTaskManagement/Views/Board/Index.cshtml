@@ -1,8 +1,16 @@
 ﻿@model KanbanTaskManagement.Models.Board
 
 <div class="kanban-board">
-	@foreach(var col in Model.Columns)
-	{
-		<partial name="_KanbanColumn" model="col" />
-	}
+	<table>
+		<colgroup>
+			<col span="3" />	
+		</colgroup>
+		<tr>
+			@foreach (var col in Model.Columns) {
+				<td>
+					<partial name="_KanbanColumn" model="col" />
+				</td>
+			}
+		</tr>
+	</table>
 </div>
