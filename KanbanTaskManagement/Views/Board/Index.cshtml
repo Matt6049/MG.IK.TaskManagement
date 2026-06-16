@@ -1,0 +1,8 @@
+﻿@model KanbanTaskManagement.Models.Board
+
+<div class="kanban-board">
+	@foreach(var col in Model.Columns)
+	{
+		<partial name="_KanbanColumn" model="col" />
+	}
+</div>

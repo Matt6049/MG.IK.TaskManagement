@@ -1,0 +1,12 @@
+﻿@model KanbanTaskManagement.Models.Column
+
+<div class="kanban-column">
+	<h3>@Model.Type.ToString().Replace("_", " ")</h3>
+
+	<div class="task-list">
+		@foreach(var task in Model.Tasks)
+		{
+			<partial name="_KanbanTask" model="task"/>
+		}
+	</div>
+</div>
