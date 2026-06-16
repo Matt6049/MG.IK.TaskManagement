@@ -1,8 +1,32 @@
-﻿@{
+﻿@model KanbanTaskManagement.Models.Board;
+@{
     ViewData["Title"] = "Home Page";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<table>
+    <colgroup>
+        <col span="3"/>
+    </colgroup>
+    <tr>
+        <th>Backlog</th>
+        <th>In progress</th>
+        <th>Done</th>
+    </tr>
+    <tr>
+        @foreach(var col in Model.Columns){
+            <td>
+                <ul>
+                    @foreach(var task in col.Tasks){
+                        <li>
+                            <!--Html.Action-->
+                        </li>
+                    }
+                </ul>
+            </td>
+        }
+    </tr>
+    <tr>
+        <td><button>Add task</button></td>
+    </tr>
+</table>
+
