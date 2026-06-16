@@ -1,5 +1,4 @@
 ﻿@model List<KanbanTaskManagement.Models.Group>
-
 <style>
     .group-header {
         transition: background 0.4s ease-in-out;
@@ -24,9 +23,8 @@
 
     @foreach (var group in Model)
     {
-        string collapseId = "group-" + group.Id.ToString();
+        string collapseId = "group-" + group.Id;
 
-        // Dodano klasę group-item do identyfikacji przez skrypt
         <div class="card mb-3 shadow-sm border-0 overflow-hidden group-item">
             <div class="card-header text-white border-0 pt-3 pb-3 group-header"
                  style="cursor: pointer;"
@@ -61,11 +59,7 @@
                                 <tr>
                                     <td class="ps-4">@member.Username</td>
                                     <td><span class="badge" style="background-color: #008080;">@member.Role</span></td>
-                                    @*
-                                        NOTE(Iza) : Dodam jak bedzie DTO
-<td class="pe-4 text-muted small">@member.LastActivity.ToString("g")</td>
-*@  --!>
-                               
+                                </tr>
                             }
                         </tbody>
                     </table>
