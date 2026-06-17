@@ -19,12 +19,22 @@ namespace KanbanTaskManagement.Controllers
 
         public IActionResult Index()
         {
-            var groups = _db.GroupCollection.Find(_ => true).ToList();
+            var groups = _db.GroupCollection.Aggregate()
+                .Project(group => new GroupDTO { Id = group.Id, CreatedAt = group.CreatedAt, Name = group.Name })
+                .ToList();
             return View("Index", groups);
         }
 
+        public async Task<IActionResult> Create(string name) {
+            Group newGroup = new() {
+                Name = name
+            };
+            await _db.GroupCollection.InsertOneAsync(newGroup);
+            return RedirectToAction("Index");
+        }
+
         public async Task<IActionResult> GetGroupMembers(string id) {
-			if (!ObjectId.TryParse(id, out ObjectId objectId))
+            if (!ObjectId.TryParse(id, out ObjectId objectId))
                 return BadRequest("Incorrect Group Id format!");
 
 			var aggregate = _db.GroupCollection.Aggregate()
