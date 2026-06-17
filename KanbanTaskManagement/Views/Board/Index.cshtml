@@ -1,16 +1,69 @@
 ﻿@model KanbanTaskManagement.Models.Board
 
-<div class="kanban-board">
-	<table>
-		<colgroup>
-			<col span="3" />	
-		</colgroup>
-		<tr>
-			@foreach (var col in Model.Columns) {
-				<td>
-					<partial name="_KanbanColumn" model="col" />
-				</td>
-			}
-		</tr>
-	</table>
+<style>
+    /* Definicja stylu neonowego przycisku */
+    .btn-neon {
+        border: none;
+        color: white;
+        transition: 0.3s;
+        background: linear-gradient(to bottom, #000000 10%, #00d4ff 100%);
+    }
+
+        .btn-neon:hover {
+            filter: brightness(1.2);
+            box-shadow: 0 0 10px #00d4ff;
+        }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="p-3 mb-4 rounded" style="background: linear-gradient(to right, #008080 0%, #000000 100%);">
+        <h2 class="m-0 text-white">@Model.Name</h2>
+    </div>
+
+    <div class="d-flex align-items-start gap-3">
+        @foreach (var col in Model.Columns)
+        {
+            <div class="flex-fill" style="min-width: 300px;">
+                <partial name="_KanbanColumn" model="col" />
+            </div>
+        }
+    </div>
 </div>
+
+<div class="modal fade" id="taskModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-white border-secondary">
+            <form asp-controller="Board" asp-action="UpdateTask" method="post">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title">Edycja zadania</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="taskId" id="editTaskId" />
+                    <div class="mb-3">
+                        <label class="form-label">Nazwa zadania</label>
+                        <input type="text" name="name" id="editTaskName" class="form-control bg-dark text-white border-secondary" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Opis</label>
+                        <textarea name="description" id="editTaskDesc" class="form-control bg-dark text-white border-secondary"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="submit" class="btn btn-neon">Zapisz zmiany</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    var taskModal = document.getElementById('taskModal');
+    taskModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        document.getElementById('editTaskId').value = button.getAttribute('data-bs-id');
+        document.getElementById('editTaskName').value = button.getAttribute('data-bs-name');
+        document.getElementById('editTaskDesc').value = button.getAttribute('data-bs-desc');
+    });
+</script>

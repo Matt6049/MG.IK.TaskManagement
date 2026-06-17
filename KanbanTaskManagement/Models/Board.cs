@@ -18,7 +18,10 @@ public class Board {
 	[BsonRequired]
 	public bool IsUserOwned { get; set; }
 
-	[BsonRequired]
+    [BsonRequired]
+    public ObjectId GroupId { get; set; }
+
+    [BsonRequired]
 	public required string OwnerName { get; set; }
 
 	[BsonRequired]
