@@ -1,6 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using KanbanTaskManagement.Data;
 using MongoDB.Driver;
+using KanbanTaskManagement.Models;
+using MongoDB.Bson;
+using KanbanTaskManagement.ViewModels;
 
 namespace KanbanTaskManagement.Controllers
 {
@@ -17,7 +20,24 @@ namespace KanbanTaskManagement.Controllers
         public IActionResult Index()
         {
             var groups = _db.GroupCollection.Find(_ => true).ToList();
-            return View(groups);
+            return View("Index", groups);
+        }
+
+        public async Task<IActionResult> GetGroupMembers(string id) {
+			if (!ObjectId.TryParse(id, out ObjectId objectId))
+                return BadRequest("Incorrect Group Id format!");
+
+			var aggregate = _db.GroupCollection.Aggregate()
+                .Match(Builders<Group>.Filter.Eq(group => group.Id, objectId))
+                .Unwind<Group, GroupMember>(group => group.Members)
+                .Lookup<GroupMember, User, GroupMemberLookup>(
+                    foreignCollection: _db.UserCollection,
+                    localField: member => member.UserId,
+                    foreignField: user => user.Id,
+                    @as: match => match.Matches)
+                .Unwind<GroupMemberLookup, GroupMemberDTO>(lookup => lookup.Matches);
+            var results = await aggregate.ToListAsync();
+            return PartialView("_GroupMembers", results);
         }
     }
 }
