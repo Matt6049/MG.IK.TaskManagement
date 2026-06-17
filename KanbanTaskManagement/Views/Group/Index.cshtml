@@ -23,49 +23,7 @@
 
     @foreach (var group in Model)
     {
-        string collapseId = "group-" + group.Id;
-
-        <div class="card mb-3 shadow-sm border-0 overflow-hidden group-item">
-            <div class="card-header text-white border-0 pt-3 pb-3 group-header"
-                 style="cursor: pointer;"
-                 data-bs-toggle="collapse"
-                 data-bs-target="#@collapseId"
-                 aria-expanded="false">
-
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="fw-bold mb-0 group-name">
-                            <i class="bi bi-people-fill me-2"></i>@group.Name
-                        </h5>
-                        <small class="text-white-50">Utworzono: @group.CreatedAt.ToString("dd.MM.yyyy")</small>
-                    </div>
-                    <i class="bi bi-chevron-down"></i>
-                </div>
-            </div>
-
-            <div class="collapse" id="@collapseId">
-                <div class="card-body p-0 border-top">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light text-uppercase small text-muted">
-                            <tr>
-                                <th class="ps-4">Użytkownik</th>
-                                <th>Rola</th>
-                                <th class="pe-4">Ostatnia aktywność</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var member in group.Members)
-                            {
-                                <tr>
-                                    <td class="ps-4">@member.Username</td>
-                                    <td><span class="badge" style="background-color: #008080;">@member.Role</span></td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+        <partial name="_Group" model="group" />
     }
 </div>
 
