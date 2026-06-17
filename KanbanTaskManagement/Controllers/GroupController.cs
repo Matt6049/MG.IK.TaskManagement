@@ -1,9 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using KanbanTaskManagement.Data;
-using MongoDB.Driver;
+﻿using KanbanTaskManagement.Data;
 using KanbanTaskManagement.Models;
-using MongoDB.Bson;
 using KanbanTaskManagement.ViewModels;
+using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
+using MongoDB.Driver;
+using MongoDB.Driver.Linq;
+using System.Text.RegularExpressions;
+using Group = KanbanTaskManagement.Models.Group;
 
 namespace KanbanTaskManagement.Controllers
 {
@@ -32,21 +35,27 @@ namespace KanbanTaskManagement.Controllers
             await _db.GroupCollection.InsertOneAsync(newGroup);
             return RedirectToAction("Index");
         }
+		
 
-        public async Task<IActionResult> GetGroupMembers(string id) {
+		public async Task<IActionResult> GetGroupMembers(string id) {
             if (!ObjectId.TryParse(id, out ObjectId objectId))
                 return BadRequest("Incorrect Group Id format!");
 
-			var aggregate = _db.GroupCollection.Aggregate()
-                .Match(Builders<Group>.Filter.Eq(group => group.Id, objectId))
-                .Unwind<Group, GroupMember>(group => group.Members)
-                .Lookup<GroupMember, User, GroupMemberLookup>(
-                    foreignCollection: _db.UserCollection,
-                    localField: member => member.UserId,
-                    foreignField: user => user.Id,
-                    @as: match => match.Matches)
-                .Unwind<GroupMemberLookup, GroupMemberDTO>(lookup => lookup.Matches);
+            var aggregate = _db.GroupCollection.AsQueryable()
+                .Where(group => group.Id == objectId)
+                .SelectMany(group => group.Members)
+                .Join(
+                    inner: _db.UserCollection.AsQueryable(),
+                    outerKeySelector: member => member.UserId,
+                    innerKeySelector: user => user.Id,
+                    resultSelector: (member, user) => new GroupMemberDTO() {
+                        Id = user.Id,
+                        Role = member.Role,
+                        LastActive = user.LastActive,
+                        Username = user.Username
+                    });
             var results = await aggregate.ToListAsync();
+
             return PartialView("_GroupMembers", results);
         }
     }
