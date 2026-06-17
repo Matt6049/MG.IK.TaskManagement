@@ -35,10 +35,12 @@
         </div>
     </div>
 
-    @foreach (var group in Model)
-    {
-        <partial name="_Group" model="group" />
-    }
+    <div id="groups-list">
+        @foreach (var group in Model)
+        {
+            <partial name="_Group" model="group" />
+        }
+    </div>
 </div>
 
 <div class="modal fade" id="addUserModal" tabindex="-1">
@@ -78,5 +80,32 @@
                 g.style.display = g.querySelector('.group-name').innerText.toLowerCase().includes(input) ? "" : "none";
             });
         }
+    </script>
+
+    <script type="module">
+        async function loadMembers(event){
+            let container = event.srcElement;
+            if(container.innerHTML.trim()) return;
+
+            let groupId = container.getAttribute("data-group-id");
+            let collapsible = bootstrap.Collapse.getInstance(container);
+            event.preventDefault();
+
+            try{
+                const response = await fetch(`/Group/GetGroupMembers?id=${groupId}`);
+                if(!response.ok) throw new Error(`Response status: ${response.status}`);
+
+                const result = await response.text();
+                container.innerHTML = result;
+                collapsible.show(); 
+            } catch(e){
+                console.error("Failed to load group members:", e);
+                container.innerHTML = "<p class='text-danger'>Ładowanie użytkowników nie powiodło się!</p>";
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function(){
+            document.getElementById("groups-list").addEventListener("show.bs.collapse", loadMembers);
+        }, {once:true})
     </script>
 }

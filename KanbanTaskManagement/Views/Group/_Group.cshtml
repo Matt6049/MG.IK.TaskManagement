@@ -22,29 +22,8 @@ string groupMembersId = "group-" + @Model.Id;
         </div>
     </div>
 
-    <div class="collapse" id="@groupMembersId">
+    <div class="collapse" id="@groupMembersId" data-group-id="@Model.Id">
 
     </div>
 </div>
 
-@section Scripts{
-    <script>
-        async function loadMembers(){
-            const container = document.getElementById("@groupMembersId");
-
-            try{
-                const response = await fetch(`/GroupController/GetGroupMembers?id=@Model.Id`);
-                if(!response.ok) throw new Error(`Response status: ${response.status}`);
-
-                const result = await response.text();
-                container.innerHTML = result;
-                document.removeEventListener("show.bs.collapse", loadMembers);
-            } catch(e){
-                console.error("Failed to load group members:", e);
-                container.innerHTML("<p class='text-danger'>Ładowanie użytkowników nie powiodło się!</p>")
-            }
-        }
-
-        document.addEventListener("show.bs.collapse", loadMembers)
-    </script>
-}
