@@ -18,5 +18,5 @@ public class Group {
 	public required DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
 	[BsonRequired]
-	public GroupMember[] Members { get; set; } = [];
+	public List<GroupMember> Members { get; set; } = [];
 }

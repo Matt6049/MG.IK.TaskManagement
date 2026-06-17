@@ -11,7 +11,7 @@ public enum GroupRole {
 }
 
 public class GroupMember {
-	public required string Username { get; set; }
+	public required ObjectId UserId { get; set; }
 
 	[BsonRequired]
 	[BsonRepresentation(BsonType.Int32)]

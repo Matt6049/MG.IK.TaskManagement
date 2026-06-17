@@ -21,6 +21,12 @@ public class User {
 	[BsonDateTimeOptions(
 		Kind = DateTimeKind.Utc,
 		Representation = BsonType.DateTime)]
-	public DateTime CreatedAt { get; set; }
+	public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+	[BsonRequired]
+	[BsonDateTimeOptions(
+		Kind = DateTimeKind.Utc,
+		Representation = BsonType.DateTime)]
+	public DateTime LastActive { get; set; } = DateTime.UtcNow;
 }
 
