@@ -9,7 +9,7 @@ namespace KanbanTaskManagement.Models;
 
 //todo: activity logs
 
-public class Board {
+public class Board : IMongoDocument {
 	public ObjectId Id { get; set; }
 
 	[BsonRequired]

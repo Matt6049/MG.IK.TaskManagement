@@ -5,7 +5,7 @@ using MongoDB.Bson.Serialization.Attributes;
 namespace KanbanTaskManagement.Models;
 
 
-public class Group {
+public class Group : IMongoDocument{
 	public ObjectId Id { get; set; }
 
 	public string? Name { get; set; } = null;
