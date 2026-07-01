@@ -3,29 +3,20 @@ using KanbanTaskManagement.Models;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using MongoDB.Driver.Linq;
 
 namespace KanbanTaskManagement.Repositories;
 
-public class DocumentRepository<T> : Repository<T> where T: IMongoDocument{
-	public required IMongoCollection<T> Collection { get; init; }
+public class DocumentRepository<TDocument> : Repository<TDocument> where TDocument: IMongoDocument{
+	public required IMongoCollection<TDocument> Collection { get; init; }
 
-	public async Task<QueryResult<T>> GetById(string id) {
-		QueryResult<T> queryRes = new();
-
+	public async Task<ReadQueryResult<TDocument>> GetById(string id) {
 		if (!ObjectId.TryParse(id, out ObjectId documentId)) {
-			queryRes.ErrorStatus = new BadRequestResult();
-			return queryRes;
+			return new BadRequestResult();
 		}
 
-		var document = await Collection
-			.Find(doc => doc.Id == documentId)
+		return await Collection.AsQueryable()
+			.Where(doc => doc.Id == documentId)
 			.FirstOrDefaultAsync();
-		if (document == null) {
-			queryRes.ErrorStatus = new NotFoundResult();
-			return queryRes;
-		}
-		queryRes.Ok = true;
-		queryRes.Result = document;
-		return queryRes;
 	}
 }
