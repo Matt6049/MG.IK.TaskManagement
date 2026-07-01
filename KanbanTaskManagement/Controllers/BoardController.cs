@@ -13,7 +13,7 @@ namespace KanbanTaskManagement.Controllers;
 public class BoardController : Controller
 {
     private readonly MongoDBContext _db;
-    private readonly DocumentRepository<Board> repository;
+    private readonly BoardRepository repository;
 
     public BoardController(MongoDBContext db)
     {
@@ -34,21 +34,23 @@ public class BoardController : Controller
 
         // Pobieramy konkretną tablicę po jej ID
         var queryRes = await repository.GetById(id);
-        if(queryRes.Ok)
-			return View(queryRes.Result);
-        return queryRes.ErrorStatus;
+        if(!queryRes.Ok)
+			return queryRes.ErrorStatus;
+		return View(queryRes.Result);
 	}
 
 
     public async Task<IActionResult> UpdateTask(string boardId, string taskId, string newName, string newDescription) {
-        var res = await GetBoardById(boardId);
-        if (!res.Ok)
-            return res.ErrorStatus;
+        var taskRes = await repository.GetTaskById(boardId, taskId);
+        if (!taskRes.Ok)
+            return taskRes.ErrorStatus;
+        var task = taskRes.Result;
+        task.Name = newName;
+        task.Description = newDescription;
 
-    }
-
-    private async Task<QueryResult<Board>> GetBoardById(string id) {
-
-
+        var updateRes = await repository.UpdateTask(boardId, task);
+        if (!updateRes.Ok)
+            return updateRes.ErrorStatus;
+        return View(task);
     }
 }

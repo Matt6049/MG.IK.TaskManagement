@@ -25,7 +25,7 @@ public class Board : IMongoDocument {
 	public required string OwnerName { get; set; }
 
 	[BsonRequired]
-	public Column[] Columns { get; set; } = [
+	public List<Column> Columns { get; set; } = [
 			new Column(){
 				Type=ColumnType.BACKLOG
 			},

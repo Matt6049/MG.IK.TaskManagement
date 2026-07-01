@@ -39,6 +39,7 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
+                    <input type="hidden" name="boardId" id="editTaskBoard"/>
                     <input type="hidden" name="taskId" id="editTaskId" />
                     <div class="mb-3">
                         <label class="form-label">Nazwa zadania</label>
@@ -59,11 +60,17 @@
 </div>
 
 <script>
-    var taskModal = document.getElementById('taskModal');
+    let taskModal = document.getElementById('taskModal');
     taskModal.addEventListener('show.bs.modal', function (event) {
-        var button = event.relatedTarget;
-        document.getElementById('editTaskId').value = button.getAttribute('data-bs-id');
-        document.getElementById('editTaskName').value = button.getAttribute('data-bs-name');
-        document.getElementById('editTaskDesc').value = button.getAttribute('data-bs-desc');
+        const boardInput = taskModal.getElementById('editTaskBoard');
+        const idInput = taskModal.getElementById('editTaskId');
+        const nameInput = taskModal.getElementById('editTaskName');
+        const descInput = taskModal.getElementById('editTaskDesc');
+
+        let button = event.relatedTarget;
+        boardInput.value = @Model.Id;
+        idInput.value = button.getAttribute('data-bs-id');
+        nameInput.value = button.getAttribute('data-bs-name');
+        descInput.value = button.getAttribute('data-bs-desc');
     });
 </script>

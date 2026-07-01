@@ -16,6 +16,7 @@ namespace KanbanTaskManagement
 
             builder.Services.AddControllersWithViews();
             builder.Services.AddRazorPages();
+            builder.Services.AddSession();
 
             var app = builder.Build();
 

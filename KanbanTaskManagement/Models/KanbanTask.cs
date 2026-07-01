@@ -10,11 +10,13 @@ namespace KanbanTaskManagement.Models
         HIGH
     }
 
+
     public class KanbanTask
     {
         [BsonId]
-        [BsonRepresentation(BsonType.ObjectId)]
-        public string? Id { get; set; }
+        [BsonRequired]
+        public ObjectId Id { get; set; }
+
         [BsonRequired]
         public required string Name { get; set; }
 

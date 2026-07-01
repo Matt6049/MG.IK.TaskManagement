@@ -9,6 +9,7 @@ public enum ColumnType {
 	DONE
 };
 
+
 public class Column {
 	[BsonRequired]
 	[BsonRepresentation(BsonType.Int32)]
