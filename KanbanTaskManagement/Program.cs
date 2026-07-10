@@ -1,4 +1,5 @@
 using KanbanTaskManagement.Data;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 namespace KanbanTaskManagement
 {
@@ -16,7 +17,15 @@ namespace KanbanTaskManagement
 
             builder.Services.AddControllersWithViews();
             builder.Services.AddRazorPages();
-            builder.Services.AddSession();
+            builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+                .AddCookie(options => {
+                    options.LoginPath = "/Login";
+                    options.ExpireTimeSpan = TimeSpan.FromDays(3);
+                    options.SlidingExpiration = true;
+                    options.Cookie.HttpOnly = true;
+                    //bez securepolicy bo robimy http
+                });
+
 
             var app = builder.Build();
 
@@ -32,7 +41,9 @@ namespace KanbanTaskManagement
 
             app.UseRouting();
 
-            app.UseAuthorization();
+			app.UseAuthentication();
+			app.UseAuthorization();
+            
 
             app.MapControllerRoute(
                 name: "default",

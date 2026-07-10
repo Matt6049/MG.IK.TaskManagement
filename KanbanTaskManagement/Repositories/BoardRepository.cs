@@ -9,6 +9,15 @@ using System.Threading.Tasks;
 namespace KanbanTaskManagement.Repositories;
 
 public class BoardRepository : DocumentRepository<Board> {
+	public async Task InsertBoard(Board board) {
+		await Collection.InsertOneAsync(board);
+	}
+
+	public async Task<ReadQueryResult<Board>> GetByName(string boardName) {
+		var res = await Collection.FindAsync(board => board.Name == boardName);
+		return await res.FirstOrDefaultAsync();
+	}
+
 	public async Task<UpdateQueryResult<Board>> UpdateTask(string boardId, KanbanTask task) {
 		if (!ObjectId.TryParse(boardId, out ObjectId _boardId))
 			return new BadRequestResult();
@@ -29,13 +38,9 @@ public class BoardRepository : DocumentRepository<Board> {
 	}
 
 
-	public async Task<UpdateQueryResult<Board>> CreateTask(string boardId, ColumnType colType, string taskId) {
-		if (!ObjectId.TryParse(boardId, out ObjectId _boardId)
-		|| !ObjectId.TryParse(taskId, out ObjectId _taskId))
-			return new BadRequestResult();
-
-		var filter = Builders<Board>.Filter.Eq(b => b.Id, _boardId);
-		var update = Builders<Board>.Update.Push("Columns.$[col].Tasks", _taskId);
+	public async Task<UpdateQueryResult<Board>> InsertTask(Board board, ColumnType colType, KanbanTask task) {
+		var filter = Builders<Board>.Filter.Eq(b => b.Id, board.Id);
+		var update = Builders<Board>.Update.Push("Columns.$[col].Tasks", task);
 		var arrayFilters = new List<ArrayFilterDefinition>(){
 			new BsonDocumentArrayFilterDefinition<BsonDocument>(
 				new BsonDocument("col.Type", colType))
@@ -74,11 +79,9 @@ public class BoardRepository : DocumentRepository<Board> {
 		if(!ObjectId.TryParse(taskId, out ObjectId _taskId))
 			return new BadRequestResult();
 
-		var boardRes = await GetById(boardId);
-		if (!boardRes.Ok) 
-			return boardRes.ErrorStatus;
-		return await boardRes.Result.Columns
+		return await Collection
 			.AsQueryable()
+			.SelectMany(board => board.Columns)
 			.SelectMany(col => col.Tasks)
 			.Where(task => task.Id == _taskId)
 			.FirstOrDefaultAsync();

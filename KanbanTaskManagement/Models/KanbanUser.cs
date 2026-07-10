@@ -3,7 +3,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace KanbanTaskManagement.Models;
 
-public class User : IMongoDocument {
+public class KanbanUser : IMongoDocument {
 	public ObjectId Id { get; set; }
 
 	[BsonRequired]
