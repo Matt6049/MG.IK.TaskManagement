@@ -14,6 +14,7 @@ public static class DbInitializer {
 		await db.BoardCollection.Indexes.CreateManyAsync(new[] {
 			new CreateIndexModel<Board>(Builders<Board>.IndexKeys.Ascending(b => b.OwnerId)),
 			new CreateIndexModel<Board>(Builders<Board>.IndexKeys.Ascending(b => b.GroupId)),
+			new CreateIndexModel<Board>(Builders<Board>.IndexKeys.Ascending("Columns.Tasks.DueDate")),
 		});
 	}
 
