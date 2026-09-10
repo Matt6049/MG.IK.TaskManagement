@@ -9,6 +9,7 @@ public class BoardDetailsViewModel {
 	public required BoardAccess Access { get; init; }
 	public List<BoardMemberView> Members { get; set; } = [];
 	public List<GroupOption> Groups { get; set; } = [];
+	public List<string> Assignable { get; set; } = [];
 	public string? LinkedGroupName { get; set; }
 }
 
