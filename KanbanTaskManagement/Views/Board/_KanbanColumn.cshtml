@@ -1,7 +1,9 @@
-﻿@model KanbanTaskManagement.Models.Column
+@model KanbanTaskManagement.ViewModels.KanbanColumnViewModel
+@{
+    var column = Model.Column;
+}
 
 <style>
-    /* Kolory nagłówków */
     .header-BACKLOG {
         background-color: #3b3b3b !important;
     }
@@ -14,7 +16,6 @@
         background-color: #004d26 !important;
     }
 
-    /* Styl karty zadania */
     .task-card {
         border: none;
         border-left: 5px solid transparent;
@@ -28,7 +29,6 @@
             background-color: #343a40;
         }
 
-    /* Pasek priorytetu */
     .priority-HIGH {
         border-left-color: #dc3545;
     }
@@ -41,7 +41,6 @@
         border-left-color: #28a745;
     }
 
-    /* Inicjały użytkowników */
     .user-badge {
         width: 25px;
         height: 25px;
@@ -58,12 +57,12 @@
 </style>
 
 <div class="card bg-dark border-secondary h-100">
-    <div class="card-header border-0 text-white header-@Model.Type">
-        <h5 class="mb-0 text-center fw-bold">@Model.Type.ToString()</h5>
+    <div class="card-header border-0 text-white header-@column.Type">
+        <h5 class="mb-0 text-center fw-bold">@column.Type.ToString()</h5>
     </div>
 
     <div class="card-body p-2">
-        @foreach (var task in Model.Tasks)
+        @foreach (var task in column.Tasks)
         {
             <div class="task-card card mb-2 p-3 priority-@task.Priority"
                  data-bs-toggle="modal"
@@ -90,4 +89,17 @@
             </div>
         }
     </div>
+
+    @if (Model.CanEdit)
+    {
+        <div class="card-footer bg-transparent border-secondary">
+            <form asp-controller="Board" asp-action="CreateTask" method="post" class="d-flex gap-2">
+                <input type="hidden" name="boardId" value="@Model.BoardId" />
+                <input type="hidden" name="columnType" value="@((int)column.Type)" />
+                <input type="text" name="taskName" class="form-control form-control-sm bg-dark text-white border-secondary"
+                       placeholder="Nowe zadanie..." maxlength="120" required />
+                <button type="submit" class="btn btn-sm btn-outline-info"><i class="bi bi-plus-lg"></i></button>
+            </form>
+        </div>
+    }
 </div>
