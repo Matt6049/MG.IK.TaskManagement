@@ -48,6 +48,8 @@ namespace KanbanTaskManagement
             {
                 var db = scope.ServiceProvider.GetRequiredService<MongoDBContext>();
                 await DbInitializer.InitializeAsync(db);
+                if (app.Environment.IsDevelopment())
+                    await DevDataSeeder.SeedAsync(db, app.Configuration);
             }
 
             // Configure the HTTP request pipeline.
