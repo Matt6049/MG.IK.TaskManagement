@@ -1,6 +1,7 @@
 @model KanbanTaskManagement.ViewModels.KanbanColumnViewModel
 @{
     var column = Model.Column;
+    var today = DateTime.UtcNow.Date;
 }
 
 <style>
@@ -54,6 +55,19 @@
         font-weight: bold;
         border: 1px solid #6c757d;
     }
+
+    .due-badge {
+        font-size: 0.72rem;
+    }
+
+    .due-overdue {
+        background-color: #dc3545 !important;
+    }
+
+    .task-move .btn {
+        line-height: 1;
+        padding: 0.1rem 0.4rem;
+    }
 </style>
 
 <div class="card bg-dark border-secondary h-100">
@@ -64,12 +78,15 @@
     <div class="card-body p-2">
         @foreach (var task in column.Tasks)
         {
+            var overdue = task.DueDate is { } due && task.CompletedAt is null && due.Date < today;
             <div class="task-card card mb-2 p-3 priority-@task.Priority"
                  data-bs-toggle="modal"
                  data-bs-target="#taskModal"
                  data-bs-id="@task.Id"
                  data-bs-name="@task.Name"
-                 data-bs-desc="@task.Description">
+                 data-bs-desc="@task.Description"
+                 data-bs-start="@(task.StartDate?.ToString("yyyy-MM-dd"))"
+                 data-bs-due="@(task.DueDate?.ToString("yyyy-MM-dd"))">
 
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <strong class="text-white">@task.Name</strong>
@@ -78,11 +95,46 @@
                                      "bi-check-circle-fill text-success")"></i>
                 </div>
 
-                <div class="mt-2 d-flex gap-1">
-                    @foreach (var user in task.AssignedUsers)
+                @if (task.DueDate is { } dueDate)
+                {
+                    <div class="mb-2">
+                        <span class="badge due-badge @(overdue ? "due-overdue" : "bg-secondary")">
+                            <i class="bi bi-calendar-event me-1"></i>@dueDate.ToString("dd.MM.yyyy")
+                        </span>
+                    </div>
+                }
+
+                <div class="d-flex justify-content-between align-items-end">
+                    <div class="d-flex gap-1">
+                        @foreach (var user in task.AssignedUsers)
+                        {
+                            <div class="user-badge" title="@user">
+                                @(!string.IsNullOrEmpty(user) ? user.Substring(0, 1).ToUpper() : "?")
+                            </div>
+                        }
+                    </div>
+
+                    @if (Model.CanEdit)
                     {
-                        <div class="user-badge" title="@user">
-                            @(!string.IsNullOrEmpty(user) ? user.Substring(0, 1).ToUpper() : "?")
+                        <div class="task-move d-flex gap-1" onclick="event.stopPropagation()">
+                            @if (column.Type != ColumnType.BACKLOG)
+                            {
+                                <form asp-controller="Board" asp-action="MoveTask" method="post">
+                                    <input type="hidden" name="boardId" value="@Model.BoardId" />
+                                    <input type="hidden" name="taskId" value="@task.Id" />
+                                    <input type="hidden" name="targetColumn" value="@((int)column.Type - 1)" />
+                                    <button type="submit" class="btn btn-sm btn-outline-light"><i class="bi bi-arrow-left"></i></button>
+                                </form>
+                            }
+                            @if (column.Type != ColumnType.DONE)
+                            {
+                                <form asp-controller="Board" asp-action="MoveTask" method="post">
+                                    <input type="hidden" name="boardId" value="@Model.BoardId" />
+                                    <input type="hidden" name="taskId" value="@task.Id" />
+                                    <input type="hidden" name="targetColumn" value="@((int)column.Type + 1)" />
+                                    <button type="submit" class="btn btn-sm btn-outline-light"><i class="bi bi-arrow-right"></i></button>
+                                </form>
+                            }
                         </div>
                     }
                 </div>
@@ -93,11 +145,12 @@
     @if (Model.CanEdit)
     {
         <div class="card-footer bg-transparent border-secondary">
-            <form asp-controller="Board" asp-action="CreateTask" method="post" class="d-flex gap-2">
+            <form asp-controller="Board" asp-action="CreateTask" method="post" class="d-flex flex-wrap gap-2">
                 <input type="hidden" name="boardId" value="@Model.BoardId" />
                 <input type="hidden" name="columnType" value="@((int)column.Type)" />
-                <input type="text" name="taskName" class="form-control form-control-sm bg-dark text-white border-secondary"
+                <input type="text" name="taskName" class="form-control form-control-sm bg-dark text-white border-secondary flex-grow-1"
                        placeholder="Nowe zadanie..." maxlength="120" required />
+                <input type="date" name="dueDate" class="form-control form-control-sm bg-dark text-white border-secondary" style="max-width: 9rem;" title="Termin" />
                 <button type="submit" class="btn btn-sm btn-outline-info"><i class="bi bi-plus-lg"></i></button>
             </form>
         </div>
