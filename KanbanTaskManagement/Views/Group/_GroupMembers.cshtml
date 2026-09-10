@@ -1,4 +1,4 @@
-﻿@model IEnumerable<KanbanTaskManagement.ViewModels.GroupMemberDTO>
+@model KanbanTaskManagement.ViewModels.GroupMembersViewModel
 
 <div class="card-body p-0 border-top">
     <table class="table table-hover align-middle mb-0">
@@ -6,15 +6,49 @@
             <tr>
                 <th class="ps-4">Użytkownik</th>
                 <th>Rola</th>
-                <th class="pe-4">Ostatnia aktywność</th>
+                <th>Ostatnia aktywność</th>
+                @if (Model.CanManage)
+                {
+                    <th class="pe-4 text-end">Akcje</th>
+                }
             </tr>
         </thead>
         <tbody>
-            @foreach (var member in Model) {
+            @foreach (var member in Model.Members)
+            {
                 <tr>
-                    <td class="ps-4">@member.Username.ToString()</td>
-                    <td><span class="badge" style="background-color: #008080;">@member.Role</span></td>
-                    <td class="pe-4">@member.LastActive</td>
+                    <td class="ps-4">@member.Username</td>
+                    <td>
+                        @if (Model.CanManage)
+                        {
+                            <form asp-controller="Group" asp-action="SetRole" method="post" class="d-inline">
+                                <input type="hidden" name="groupId" value="@Model.GroupId" />
+                                <input type="hidden" name="userId" value="@member.Id" />
+                                <select name="role" class="form-select form-select-sm w-auto d-inline" onchange="this.form.submit()">
+                                    @foreach (var r in RoleLabels.All)
+                                    {
+                                        <option value="@((int)r)" selected="@(member.Role == r)">@r.PolishName()</option>
+                                    }
+                                </select>
+                            </form>
+                        }
+                        else
+                        {
+                            <span class="badge" style="background-color: #008080;">@member.Role.PolishName()</span>
+                        }
+                    </td>
+                    <td>@member.LastActive.ToString("dd.MM.yyyy HH:mm")</td>
+                    @if (Model.CanManage)
+                    {
+                        <td class="pe-4 text-end">
+                            <form asp-controller="Group" asp-action="RemoveMember" method="post" class="d-inline"
+                                  onsubmit="return confirm('Usunąć @member.Username z grupy?')">
+                                <input type="hidden" name="groupId" value="@Model.GroupId" />
+                                <input type="hidden" name="userId" value="@member.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg"></i></button>
+                            </form>
+                        </td>
+                    }
                 </tr>
             }
         </tbody>
