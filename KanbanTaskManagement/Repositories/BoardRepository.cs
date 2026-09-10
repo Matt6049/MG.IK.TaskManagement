@@ -43,6 +43,12 @@ public class BoardRepository : DocumentRepository<Board> {
 			Builders<Board>.Update.Set(b => b.GroupId, groupId));
 	}
 
+	public async Task<UpdateQueryResult<Board>> SetTheme(ObjectId boardId, BoardTheme theme) {
+		return await Collection.UpdateOneAsync(
+			b => b.Id == boardId,
+			Builders<Board>.Update.Set(b => b.Theme, theme));
+	}
+
 	public async Task<List<Board>> GetAccessibleBoards(ObjectId userId) {
 		var myGroupIds = await Database.GroupCollection
 			.Find(Builders<Group>.Filter.ElemMatch(g => g.Members, m => m.UserId == userId))
