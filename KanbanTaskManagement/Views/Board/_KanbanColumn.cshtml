@@ -5,18 +5,6 @@
 }
 
 <style>
-    .header-BACKLOG {
-        background-color: #3b3b3b !important;
-    }
-
-    .header-IN_PROGRESS {
-        background-color: #005f5f !important;
-    }
-
-    .header-DONE {
-        background-color: #004d26 !important;
-    }
-
     .task-card {
         border: none;
         border-left: 5px solid transparent;
@@ -71,7 +59,7 @@
 </style>
 
 <div class="card bg-dark border-secondary h-100">
-    <div class="card-header border-0 text-white header-@column.Type">
+    <div class="card-header border-0 text-white" style="background-color: @Model.HeaderColor;">
         <h5 class="mb-0 text-center fw-bold">@column.Type.ToString()</h5>
     </div>
 
@@ -86,13 +74,16 @@
                  data-bs-name="@task.Name"
                  data-bs-desc="@task.Description"
                  data-bs-start="@(task.StartDate?.ToString("yyyy-MM-dd"))"
-                 data-bs-due="@(task.DueDate?.ToString("yyyy-MM-dd"))">
+                 data-bs-due="@(task.DueDate?.ToString("yyyy-MM-dd"))"
+                 data-bs-priority="@((int)task.Priority)"
+                 data-bs-assigned="@string.Join(",", task.AssignedUsers)">
 
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <strong class="text-white">@task.Name</strong>
                     <i class="bi @(task.Priority == TaskPriority.HIGH ? "bi-exclamation-octagon-fill text-danger" :
                                      task.Priority == TaskPriority.MEDIUM ? "bi-exclamation-triangle-fill text-warning" :
-                                     "bi-check-circle-fill text-success")"></i>
+                                     "bi-check-circle-fill text-success")"
+                       title="Priorytet: @task.Priority.PolishName()"></i>
                 </div>
 
                 @if (task.DueDate is { } dueDate)
@@ -151,6 +142,12 @@
                 <input type="text" name="taskName" class="form-control form-control-sm bg-dark text-white border-secondary flex-grow-1"
                        placeholder="Nowe zadanie..." maxlength="120" required />
                 <input type="date" name="dueDate" class="form-control form-control-sm bg-dark text-white border-secondary" style="max-width: 9rem;" title="Termin" />
+                <select name="priority" class="form-select form-select-sm bg-dark text-white border-secondary" style="max-width: 7rem;" title="Priorytet">
+                    @foreach (var p in RoleLabels.Priorities)
+                    {
+                        <option value="@((int)p)">@p.PolishName()</option>
+                    }
+                </select>
                 <button type="submit" class="btn btn-sm btn-outline-info"><i class="bi bi-plus-lg"></i></button>
             </form>
         </div>
