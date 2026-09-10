@@ -28,6 +28,15 @@ namespace KanbanTaskManagement.Models
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
+        public DateTime? StartDate { get; set; }
+
+        [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
+        public DateTime? DueDate { get; set; }
+
+        [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
+        public DateTime? CompletedAt { get; set; }
+
         [BsonRequired]
         public required string CreatorName { get; set; }
 
