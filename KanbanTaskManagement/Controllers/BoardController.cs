@@ -72,7 +72,7 @@ public class BoardController : Controller {
 
 	[HttpPost]
 	[ValidateAntiForgeryToken]
-	public async Task<IActionResult> CreateTask(string boardId, int columnType, string taskName, string taskDescription) {
+	public async Task<IActionResult> CreateTask(string boardId, int columnType, string taskName, string taskDescription, DateTime? startDate, DateTime? dueDate) {
 		var (board, error) = await LoadForEdit(boardId);
 		if (error is not null)
 			return error;
@@ -83,6 +83,8 @@ public class BoardController : Controller {
 			CreatorName = _currentUser.Username ?? "",
 			Name = taskName.Trim(),
 			Description = taskDescription,
+			StartDate = AsUtcDate(startDate),
+			DueDate = AsUtcDate(dueDate),
 		};
 		var res = await repository.InsertTask(board!, (ColumnType) columnType, task);
 		if (!res.Ok)
@@ -93,7 +95,7 @@ public class BoardController : Controller {
 
 	[HttpPost]
 	[ValidateAntiForgeryToken]
-	public async Task<IActionResult> UpdateTask(string boardId, string taskId, string newName, string newDescription) {
+	public async Task<IActionResult> UpdateTask(string boardId, string taskId, string newName, string newDescription, DateTime? startDate, DateTime? dueDate) {
 		var (_, error) = await LoadForEdit(boardId);
 		if (error is not null)
 			return error;
@@ -105,10 +107,34 @@ public class BoardController : Controller {
 		KanbanTask task = taskRes.Result!;
 		task.Name = newName;
 		task.Description = newDescription;
+		task.StartDate = AsUtcDate(startDate);
+		task.DueDate = AsUtcDate(dueDate);
 
 		var updateRes = await repository.UpdateTask(boardId, task);
 		if (!updateRes.Ok)
 			return updateRes.ErrorStatus;
+
+		return RedirectToAction("Index", new { id = boardId });
+	}
+
+	[HttpPost]
+	[ValidateAntiForgeryToken]
+	public async Task<IActionResult> MoveTask(string boardId, string taskId, int targetColumn) {
+		var (_, error) = await LoadForEdit(boardId);
+		if (error is not null)
+			return error;
+
+		var taskRes = await repository.GetTaskById(boardId, taskId);
+		if (!taskRes.Ok)
+			return taskRes.ErrorStatus;
+
+		var target = (ColumnType) targetColumn;
+		KanbanTask task = taskRes.Result!;
+		task.CompletedAt = target == ColumnType.DONE ? DateTime.UtcNow : null;
+
+		var res = await repository.MoveTask(boardId, taskId, target, task);
+		if (!res.Ok)
+			return res.ErrorStatus;
 
 		return RedirectToAction("Index", new { id = boardId });
 	}
@@ -126,6 +152,9 @@ public class BoardController : Controller {
 
 		return RedirectToAction("Index", new { id = boardId });
 	}
+
+	private static DateTime? AsUtcDate(DateTime? value)
+		=> value.HasValue ? DateTime.SpecifyKind(value.Value.Date, DateTimeKind.Utc) : null;
 
 	[HttpPost]
 	[ValidateAntiForgeryToken]
