@@ -7,4 +7,5 @@ public class KanbanColumnViewModel {
 	public required ObjectId BoardId { get; init; }
 	public required Column Column { get; init; }
 	public bool CanEdit { get; init; }
+	public required string HeaderColor { get; init; }
 }
