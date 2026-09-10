@@ -5,6 +5,10 @@ using MongoDB.Driver;
 namespace KanbanTaskManagement.Data;
 
 public static class DevDataSeeder {
+	private static readonly ObjectId IzakId = ObjectId.Parse("5eed000000000000000000a1");
+	private static readonly ObjectId TestId = ObjectId.Parse("5eed000000000000000000a2");
+	private static readonly ObjectId KasiaId = ObjectId.Parse("5eed000000000000000000a3");
+
 	public static async Task SeedAsync(MongoDBContext db, IConfiguration config) {
 		var section = config.GetSection("Seed");
 		if (!section.GetValue("Enabled", false))
@@ -22,9 +26,9 @@ public static class DevDataSeeder {
 			await db.UserCollection.DeleteManyAsync(FilterDefinition<KanbanUser>.Empty);
 		}
 
-		var izak = NewUser("izak", "izak123");
-		var test = NewUser("test", "test123");
-		var kasia = NewUser("kasia", "kasia123");
+		var izak = NewUser(IzakId, "izak", "izak123");
+		var test = NewUser(TestId, "test", "test123");
+		var kasia = NewUser(KasiaId, "kasia", "kasia123");
 		await db.UserCollection.InsertManyAsync(new[] { izak, test, kasia });
 
 		var projekt = new Group {
@@ -86,9 +90,10 @@ public static class DevDataSeeder {
 						task.DueDate = target;
 	}
 
-	private static KanbanUser NewUser(string username, string password) {
+	private static KanbanUser NewUser(ObjectId id, string username, string password) {
 		var (hash, salt) = Auth.CreateCredential(password);
 		return new KanbanUser {
+			Id = id,
 			Username = username,
 			Email = null,
 			PasswordHash = hash,
