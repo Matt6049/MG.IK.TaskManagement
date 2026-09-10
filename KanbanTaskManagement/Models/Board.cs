@@ -26,6 +26,8 @@ public class Board : IMongoDocument {
 
 	public required string OwnerName { get; set; }
 
+	public List<BoardMember> Members { get; set; } = [];
+
 	[BsonRequired]
 	public List<Column> Columns { get; set; } = [
 			new Column(){
