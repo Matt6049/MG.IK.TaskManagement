@@ -18,6 +18,31 @@ public class BoardRepository : DocumentRepository<Board> {
 		return await res.FirstOrDefaultAsync();
 	}
 
+	public async Task<UpdateQueryResult<Board>> AddMember(ObjectId boardId, BoardMember member) {
+		return await Collection.UpdateOneAsync(
+			b => b.Id == boardId,
+			Builders<Board>.Update.Push(b => b.Members, member));
+	}
+
+	public async Task<UpdateQueryResult<Board>> SetMemberRole(ObjectId boardId, ObjectId userId, GroupRole role) {
+		return await Collection.UpdateOneAsync(
+			Builders<Board>.Filter.Eq(b => b.Id, boardId)
+				& Builders<Board>.Filter.ElemMatch(b => b.Members, m => m.UserId == userId),
+			Builders<Board>.Update.Set("Members.$.Role", (int) role));
+	}
+
+	public async Task<UpdateQueryResult<Board>> RemoveMember(ObjectId boardId, ObjectId userId) {
+		return await Collection.UpdateOneAsync(
+			b => b.Id == boardId,
+			Builders<Board>.Update.PullFilter(b => b.Members, m => m.UserId == userId));
+	}
+
+	public async Task<UpdateQueryResult<Board>> SetGroup(ObjectId boardId, ObjectId groupId) {
+		return await Collection.UpdateOneAsync(
+			b => b.Id == boardId,
+			Builders<Board>.Update.Set(b => b.GroupId, groupId));
+	}
+
 	public async Task<List<Board>> GetAccessibleBoards(ObjectId userId) {
 		var myGroupIds = await Database.GroupCollection
 			.Find(Builders<Group>.Filter.ElemMatch(g => g.Members, m => m.UserId == userId))
