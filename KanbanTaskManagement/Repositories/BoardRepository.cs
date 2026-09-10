@@ -18,6 +18,20 @@ public class BoardRepository : DocumentRepository<Board> {
 		return await res.FirstOrDefaultAsync();
 	}
 
+	public async Task<List<Board>> GetAccessibleBoards(ObjectId userId) {
+		var myGroupIds = await Database.GroupCollection
+			.Find(Builders<Group>.Filter.ElemMatch(g => g.Members, m => m.UserId == userId))
+			.Project(g => g.Id)
+			.ToListAsync();
+
+		var filter = Builders<Board>.Filter.Or(
+			Builders<Board>.Filter.Eq(b => b.OwnerId, userId),
+			Builders<Board>.Filter.ElemMatch(b => b.Members, m => m.UserId == userId),
+			Builders<Board>.Filter.In(b => b.GroupId, myGroupIds));
+
+		return await Collection.Find(filter).ToListAsync();
+	}
+
 	public async Task<UpdateQueryResult<Board>> UpdateTask(string boardId, KanbanTask task) {
 		if (!ObjectId.TryParse(boardId, out ObjectId _boardId))
 			return new BadRequestResult();
