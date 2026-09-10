@@ -42,6 +42,8 @@ public class BoardController : Controller {
 			return NotFound();
 
 		var vm = new BoardDetailsViewModel { Board = board, Access = access };
+		if (access.CanEditTasks)
+			vm.Assignable = await LoadAssignableUsernames(board);
 		if (access.CanManageMembers)
 			vm.Members = await LoadMembers(board);
 		if (access.CanManageBoard) {
@@ -72,7 +74,7 @@ public class BoardController : Controller {
 
 	[HttpPost]
 	[ValidateAntiForgeryToken]
-	public async Task<IActionResult> CreateTask(string boardId, int columnType, string taskName, string taskDescription, DateTime? startDate, DateTime? dueDate) {
+	public async Task<IActionResult> CreateTask(string boardId, int columnType, string taskName, string taskDescription, DateTime? startDate, DateTime? dueDate, int priority, string[]? assignedUsers) {
 		var (board, error) = await LoadForEdit(boardId);
 		if (error is not null)
 			return error;
@@ -85,6 +87,8 @@ public class BoardController : Controller {
 			Description = taskDescription,
 			StartDate = AsUtcDate(startDate),
 			DueDate = AsUtcDate(dueDate),
+			Priority = ClampPriority(priority),
+			AssignedUsers = await SanitizeAssignees(board!, assignedUsers),
 		};
 		var res = await repository.InsertTask(board!, (ColumnType) columnType, task);
 		if (!res.Ok)
@@ -95,8 +99,8 @@ public class BoardController : Controller {
 
 	[HttpPost]
 	[ValidateAntiForgeryToken]
-	public async Task<IActionResult> UpdateTask(string boardId, string taskId, string newName, string newDescription, DateTime? startDate, DateTime? dueDate) {
-		var (_, error) = await LoadForEdit(boardId);
+	public async Task<IActionResult> UpdateTask(string boardId, string taskId, string newName, string newDescription, DateTime? startDate, DateTime? dueDate, int priority, string[]? assignedUsers) {
+		var (board, error) = await LoadForEdit(boardId);
 		if (error is not null)
 			return error;
 
@@ -109,6 +113,8 @@ public class BoardController : Controller {
 		task.Description = newDescription;
 		task.StartDate = AsUtcDate(startDate);
 		task.DueDate = AsUtcDate(dueDate);
+		task.Priority = ClampPriority(priority);
+		task.AssignedUsers = await SanitizeAssignees(board!, assignedUsers);
 
 		var updateRes = await repository.UpdateTask(boardId, task);
 		if (!updateRes.Ok)
@@ -227,6 +233,35 @@ public class BoardController : Controller {
 		return RedirectToAction("Index", new { id = boardId });
 	}
 
+	[HttpPost]
+	[ValidateAntiForgeryToken]
+	public async Task<IActionResult> SetTheme(string boardId, string headerFrom, string headerTo, string backlogColor, string inProgressColor, string doneColor) {
+		var boardRes = await repository.GetById(boardId);
+		if (!boardRes.Ok)
+			return boardRes.ErrorStatus;
+
+		var access = await ResolveAccess(boardRes.Result!);
+		if (!access.CanManageBoard)
+			return Forbid();
+
+		var current = boardRes.Result!.Theme;
+		var theme = new BoardTheme {
+			HeaderFrom = Hex(headerFrom, current.HeaderFrom),
+			HeaderTo = Hex(headerTo, current.HeaderTo),
+			BacklogColor = Hex(backlogColor, current.BacklogColor),
+			InProgressColor = Hex(inProgressColor, current.InProgressColor),
+			DoneColor = Hex(doneColor, current.DoneColor),
+		};
+
+		await repository.SetTheme(boardRes.Result!.Id, theme);
+		return RedirectToAction("Index", new { id = boardId });
+	}
+
+	private static string Hex(string? value, string fallback)
+		=> value is not null && System.Text.RegularExpressions.Regex.IsMatch(value, "^#[0-9a-fA-F]{6}$")
+			? value.ToLowerInvariant()
+			: fallback;
+
 	private async Task<(Board? board, IActionResult? error)> LoadForEdit(string boardId) {
 		var res = await repository.GetById(boardId);
 		if (!res.Ok)
@@ -273,6 +308,30 @@ public class BoardController : Controller {
 			}));
 		return list;
 	}
+
+	private async Task<List<string>> LoadAssignableUsernames(Board board) {
+		var ids = board.Members.Select(m => m.UserId).Append(board.OwnerId).ToHashSet();
+		if (board.GroupId != ObjectId.Empty) {
+			var group = await _db.GroupCollection.Find(g => g.Id == board.GroupId).FirstOrDefaultAsync();
+			if (group is not null)
+				foreach (var m in group.Members)
+					ids.Add(m.UserId);
+		}
+
+		var users = await _db.UserCollection.Find(u => ids.Contains(u.Id)).ToListAsync();
+		return users.Select(u => u.Username).OrderBy(n => n).ToList();
+	}
+
+	private async Task<string[]> SanitizeAssignees(Board board, string[]? requested) {
+		if (requested is null || requested.Length == 0)
+			return Array.Empty<string>();
+
+		var eligible = (await LoadAssignableUsernames(board)).ToHashSet();
+		return requested.Where(eligible.Contains).Distinct().ToArray();
+	}
+
+	private static TaskPriority ClampPriority(int value)
+		=> (TaskPriority) Math.Clamp(value, (int) TaskPriority.LOW, (int) TaskPriority.HIGH);
 
 	private async Task<List<GroupOption>> LoadManagedGroups() {
 		if (_currentUser.UserId is not { } userId)
