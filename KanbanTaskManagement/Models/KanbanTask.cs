@@ -15,7 +15,7 @@ namespace KanbanTaskManagement.Models
     {
         [BsonId]
         [BsonRequired]
-        public ObjectId Id { get; set; }
+        public ObjectId Id { get; set; } = ObjectId.GenerateNewId();
 
         [BsonRequired]
         public required string Name { get; set; }
