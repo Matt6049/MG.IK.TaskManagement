@@ -19,6 +19,7 @@ namespace KanbanTaskManagement
 
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddScoped<ICurrentUser, CurrentUserService>();
+            builder.Services.AddScoped<IPermissionService, PermissionService>();
 
             var requireAuth = new AuthorizationPolicyBuilder()
                 .RequireAuthenticatedUser()
@@ -32,7 +33,7 @@ namespace KanbanTaskManagement
                 .AddCookie(options => {
                     options.LoginPath = "/Account/Login";
                     options.LogoutPath = "/Account/Logout";
-                    options.AccessDeniedPath = "/Account/Login";
+                    options.AccessDeniedPath = "/Home/AccessDenied";
                     options.ReturnUrlParameter = "returnUrl";
                     options.ExpireTimeSpan = TimeSpan.FromDays(3);
                     options.SlidingExpiration = true;
