@@ -1,4 +1,5 @@
 ﻿@model IEnumerable<KanbanTaskManagement.Models.Board>
+@inject KanbanTaskManagement.Services.ICurrentUser CurrentUser
 
 <style>
     .board-header {
@@ -39,7 +40,16 @@
                         <h5 class="fw-bold mb-0 board-name">
                             <i class="bi bi-kanban-fill me-2"></i>@board.Name
                         </h5>
-                        <small class="text-white-50">Właściciel: @board.OwnerName</small>
+                        <small class="text-white-50">
+                            @if (board.OwnerId == CurrentUser.UserId)
+                            {
+                                <span>Twoja tablica</span>
+                            }
+                            else
+                            {
+                                <span>Udostępniona przez @board.OwnerName</span>
+                            }
+                        </small>
                     </div>
                     <i class="bi bi-arrow-right"></i>
                 </div>
