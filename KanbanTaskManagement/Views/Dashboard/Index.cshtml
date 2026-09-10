@@ -16,10 +16,16 @@
 </style>
 
 <div class="container-fluid p-4">
-    <div class="row mb-4">
-        <div class="col-12">
+    <div class="row mb-4 g-2">
+        <div class="col-md-8">
             <input type="text" id="boardSearch" class="form-control form-control-lg border-2"
                    placeholder="Wyszukaj tablicę po nazwie..." onkeyup="filterBoards()">
+        </div>
+        <div class="col-md-4 text-md-end">
+            <button class="btn btn-lg text-white w-100 w-md-auto" style="background: linear-gradient(to right, #008080 0%, #000000 100%);"
+                    data-bs-toggle="modal" data-bs-target="#createBoardModal">
+                <i class="bi bi-plus-circle me-2"></i>Nowa tablica
+            </button>
         </div>
     </div>
 
@@ -29,13 +35,39 @@
             <a asp-controller="Board" asp-action="Index" asp-route-id="@board.Id"
                class="card mb-3 shadow-sm border-0 board-item text-decoration-none">
                 <div class="card-header pt-3 pb-3 board-header d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold mb-0 board-name">
-                        <i class="bi bi-kanban-fill me-2"></i>@board.Name
-                    </h5>
+                    <div>
+                        <h5 class="fw-bold mb-0 board-name">
+                            <i class="bi bi-kanban-fill me-2"></i>@board.Name
+                        </h5>
+                        <small class="text-white-50">Właściciel: @board.OwnerName</small>
+                    </div>
                     <i class="bi bi-arrow-right"></i>
                 </div>
             </a>
         }
+        @if (!Model.Any())
+        {
+            <p class="text-muted">Nie masz jeszcze żadnej tablicy. Utwórz pierwszą przyciskiem „Nowa tablica".</p>
+        }
+    </div>
+</div>
+
+<div class="modal fade" id="createBoardModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form asp-controller="Board" asp-action="CreateBoard" method="post" class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nowa tablica</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <label for="boardName" class="form-label">Nazwa tablicy</label>
+                <input type="text" name="boardName" id="boardName" class="form-control" maxlength="80" required autofocus>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                <button type="submit" class="btn text-white" style="background: linear-gradient(to right, #008080 0%, #000000 100%);">Utwórz</button>
+            </div>
+        </form>
     </div>
 </div>
 

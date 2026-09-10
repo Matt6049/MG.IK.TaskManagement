@@ -8,7 +8,7 @@ namespace KanbanTaskManagement
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
@@ -43,6 +43,12 @@ namespace KanbanTaskManagement
 
             var app = builder.Build();
 
+            using (var scope = app.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<MongoDBContext>();
+                await DbInitializer.InitializeAsync(db);
+            }
+
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
@@ -64,7 +70,7 @@ namespace KanbanTaskManagement
                 pattern: "{controller=Home}/{action=Index}/{id?}");
             app.MapRazorPages();
 
-            app.Run();
+            await app.RunAsync();
         }
     }
 }

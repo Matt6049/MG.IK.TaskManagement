@@ -1,6 +1,7 @@
 ﻿using KanbanTaskManagement.Data;
 using KanbanTaskManagement.Models;
 using KanbanTaskManagement.Repositories;
+using KanbanTaskManagement.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
@@ -14,10 +15,12 @@ namespace KanbanTaskManagement.Controllers;
 [Authorize]
 public class BoardController : Controller {
 	private readonly MongoDBContext _db;
+	private readonly ICurrentUser _currentUser;
 	private readonly BoardRepository repository;
 
-	public BoardController(MongoDBContext db) {
+	public BoardController(MongoDBContext db, ICurrentUser currentUser) {
 		_db = db;
+		_currentUser = currentUser;
 		repository = new() {
 			Collection = _db.BoardCollection,
 			Database = _db
@@ -41,10 +44,21 @@ public class BoardController : Controller {
 	}
 
 	[HttpPost]
+	[ValidateAntiForgeryToken]
 	public async Task<IActionResult> CreateBoard(string boardName) {
-		Board board = new() { Name = boardName, OwnerName = User.FindFirst(ClaimTypes.Name).Value, IsUserOwned = true };
+		if (string.IsNullOrWhiteSpace(boardName))
+			return RedirectToAction("Index", "Dashboard");
+		if (_currentUser.UserId is not { } ownerId)
+			return Forbid();
+
+		Board board = new() {
+			Name = boardName.Trim(),
+			OwnerId = ownerId,
+			OwnerName = _currentUser.Username ?? "",
+			IsUserOwned = true,
+		};
 		await repository.InsertBoard(board);
-		return RedirectToAction("Index", board.Id);
+		return RedirectToAction("Index", new { id = board.Id.ToString() });
 	}
 
 	[HttpPost]

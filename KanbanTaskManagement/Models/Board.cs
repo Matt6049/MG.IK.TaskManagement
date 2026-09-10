@@ -22,7 +22,8 @@ public class Board : IMongoDocument {
 
     public ObjectId GroupId { get; set; }
 
-    
+	public ObjectId OwnerId { get; set; }
+
 	public required string OwnerName { get; set; }
 
 	[BsonRequired]
