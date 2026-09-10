@@ -64,6 +64,16 @@
                         <label class="form-label">Opis</label>
                         <textarea name="newDescription" id="editTaskDesc" class="form-control bg-dark text-white border-secondary" @(access.CanEditTasks ? null : "readonly")></textarea>
                     </div>
+                    <div class="row g-2">
+                        <div class="col">
+                            <label class="form-label">Rozpoczęcie</label>
+                            <input type="date" name="startDate" id="editTaskStart" class="form-control bg-dark text-white border-secondary" @(access.CanEditTasks ? null : "readonly") />
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Termin</label>
+                            <input type="date" name="dueDate" id="editTaskDue" class="form-control bg-dark text-white border-secondary" @(access.CanEditTasks ? null : "readonly") />
+                        </div>
+                    </div>
                 </div>
                 @if (access.CanEditTasks)
                 {
@@ -184,6 +194,8 @@
             document.getElementById('editTaskId').value = button.getAttribute('data-bs-id');
             document.getElementById('editTaskName').value = button.getAttribute('data-bs-name');
             document.getElementById('editTaskDesc').value = button.getAttribute('data-bs-desc') || '';
+            document.getElementById('editTaskStart').value = button.getAttribute('data-bs-start') || '';
+            document.getElementById('editTaskDue').value = button.getAttribute('data-bs-due') || '';
         });
     })();
 </script>
