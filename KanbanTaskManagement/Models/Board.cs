@@ -28,6 +28,8 @@ public class Board : IMongoDocument {
 
 	public List<BoardMember> Members { get; set; } = [];
 
+	public BoardTheme Theme { get; set; } = new();
+
 	[BsonRequired]
 	public List<Column> Columns { get; set; } = [
 			new Column(){
