@@ -66,7 +66,24 @@ public static class DevDataSeeder {
 				["Grafiki na social media"],
 				[]),
 		};
+
+		SetDue(boards, "Zebrać wymagania od promotora", 4);
+		SetDue(boards, "Zaprojektować API kalendarza", 2);
+		SetDue(boards, "Makieta widoku tablicy", -3);
+		SetDue(boards, "Model uprawnień do tablic", 9);
+		SetDue(boards, "Kampania jesienna", 1);
+		SetDue(boards, "Grafiki na social media", -1);
+
 		await db.BoardCollection.InsertManyAsync(boards);
+	}
+
+	private static void SetDue(Board[] boards, string taskName, int daysFromToday) {
+		var target = DateTime.SpecifyKind(DateTime.UtcNow.Date.AddDays(daysFromToday), DateTimeKind.Utc);
+		foreach (var board in boards)
+			foreach (var column in board.Columns)
+				foreach (var task in column.Tasks)
+					if (task.Name == taskName)
+						task.DueDate = target;
 	}
 
 	private static KanbanUser NewUser(string username, string password) {
