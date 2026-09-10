@@ -114,6 +114,32 @@ public class BoardRepository : DocumentRepository<Board> {
 	}
 
 
+	public async Task<UpdateQueryResult<Board>> MoveTask(string boardId, string taskId, ColumnType target, KanbanTask task) {
+		if (!ObjectId.TryParse(boardId, out ObjectId _boardId)
+		|| !ObjectId.TryParse(taskId, out ObjectId _taskId))
+			return new BadRequestResult();
+
+		var boardFilter = Builders<Board>.Filter.Eq(b => b.Id, _boardId);
+
+		var pull = await Collection.UpdateOneAsync(
+			boardFilter,
+			Builders<Board>.Update.PullFilter(
+				"Columns.$[].Tasks",
+				Builders<KanbanTask>.Filter.Eq(t => t.Id, _taskId)));
+
+		if (!pull.IsAcknowledged || pull.ModifiedCount == 0)
+			return pull;
+
+		return await Collection.UpdateOneAsync(
+			boardFilter,
+			Builders<Board>.Update.Push("Columns.$[col].Tasks", task),
+			new UpdateOptions {
+				ArrayFilters = new List<ArrayFilterDefinition> {
+					new BsonDocumentArrayFilterDefinition<BsonDocument>(new BsonDocument("col.Type", (int) target)),
+				},
+			});
+	}
+
 	public async Task<ReadQueryResult<KanbanTask>> GetTaskById(string boardId, string taskId) {
 		if(!ObjectId.TryParse(taskId, out ObjectId _taskId))
 			return new BadRequestResult();
