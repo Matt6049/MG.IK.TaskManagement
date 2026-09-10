@@ -56,18 +56,28 @@
         line-height: 1;
         padding: 0.1rem 0.4rem;
     }
+
+    .task-card.dragging {
+        opacity: 0.4;
+    }
+
+    .kanban-drop.drop-hover {
+        outline: 2px dashed #00d4ff;
+        outline-offset: -4px;
+    }
 </style>
 
 <div class="card bg-dark border-secondary h-100">
     <div class="card-header border-0 text-white" style="background-color: @Model.HeaderColor;">
-        <h5 class="mb-0 text-center fw-bold">@column.Type.ToString()</h5>
+        <h5 class="mb-0 text-center fw-bold">@column.Type.PolishName() <span class="opacity-75">· @column.Tasks.Count</span></h5>
     </div>
 
-    <div class="card-body p-2">
+    <div class="card-body p-2 kanban-drop" data-drop-column="@((int)column.Type)" style="min-height: 60px;">
         @foreach (var task in column.Tasks)
         {
             var overdue = task.DueDate is { } due && task.CompletedAt is null && due.Date < today;
             <div class="task-card card mb-2 p-3 priority-@task.Priority"
+                 draggable="@(Model.CanEdit ? "true" : null)"
                  data-bs-toggle="modal"
                  data-bs-target="#taskModal"
                  data-bs-id="@task.Id"

@@ -1,0 +1,74 @@
+@model List<KanbanTaskManagement.ViewModels.MyTaskItem>
+@{
+    ViewData["Title"] = "Moje zadania";
+    var today = DateTime.UtcNow.Date;
+    var weekEnd = today.AddDays(7);
+
+    var open = Model.Where(t => !t.Done).ToList();
+    var done = Model.Where(t => t.Done).ToList();
+
+    var buckets = new (string Title, string Css, IEnumerable<KanbanTaskManagement.ViewModels.MyTaskItem> Items)[]
+    {
+        ("Zaległe", "text-danger", open.Where(t => t.DueDate is { } d && d.Date < today)),
+        ("Na dziś", "text-warning", open.Where(t => t.DueDate is { } d && d.Date == today)),
+        ("W tym tygodniu", "", open.Where(t => t.DueDate is { } d && d.Date > today && d.Date <= weekEnd)),
+        ("Później", "", open.Where(t => t.DueDate is { } d && d.Date > weekEnd)),
+        ("Bez terminu", "text-muted", open.Where(t => t.DueDate is null)),
+    };
+}
+
+<div class="container-fluid p-4">
+    <h2 class="mb-4">Moje zadania</h2>
+
+    @if (Model.Count == 0)
+    {
+        <p class="text-muted">Nie masz przypisanych żadnych zadań.</p>
+    }
+
+    @foreach (var bucket in buckets)
+    {
+        var items = bucket.Items.ToList();
+        if (items.Count == 0)
+        {
+            continue;
+        }
+
+        <h5 class="mt-4 @bucket.Css">@bucket.Title <span class="text-muted">(@items.Count)</span></h5>
+        <div class="list-group mb-2">
+            @foreach (var t in items)
+            {
+                <a asp-controller="Board" asp-action="Index" asp-route-id="@t.BoardId"
+                   class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="fw-semibold">@t.TaskName</span>
+                        <span class="text-muted small">— @t.BoardName · @t.Column.PolishName()</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge @(t.Priority == KanbanTaskManagement.Models.TaskPriority.HIGH ? "bg-danger" :
+                                             t.Priority == KanbanTaskManagement.Models.TaskPriority.MEDIUM ? "bg-warning text-dark" : "bg-secondary")">
+                            @t.Priority.PolishName()
+                        </span>
+                        @if (t.DueDate is { } due)
+                        {
+                            <span class="text-muted small">@due.ToString("dd.MM.yyyy")</span>
+                        }
+                    </div>
+                </a>
+            }
+        </div>
+    }
+
+    @if (done.Count > 0)
+    {
+        <h5 class="mt-4 text-success">Ukończone <span class="text-muted">(@done.Count)</span></h5>
+        <div class="list-group">
+            @foreach (var t in done)
+            {
+                <a asp-controller="Board" asp-action="Index" asp-route-id="@t.BoardId"
+                   class="list-group-item list-group-item-action text-decoration-line-through text-muted">
+                    @t.TaskName <span class="small">— @t.BoardName</span>
+                </a>
+            }
+        </div>
+    }
+</div>

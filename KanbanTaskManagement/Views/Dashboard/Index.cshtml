@@ -1,4 +1,4 @@
-﻿@model IEnumerable<KanbanTaskManagement.Models.Board>
+﻿@model KanbanTaskManagement.ViewModels.DashboardViewModel
 @inject KanbanTaskManagement.Services.ICurrentUser CurrentUser
 
 <style>
@@ -15,6 +15,22 @@
 </style>
 
 <div class="container-fluid p-4">
+    @if (Model.OverdueCount > 0 || Model.TodayCount > 0)
+    {
+        <a asp-action="MyTasks" class="d-inline-flex align-items-center gap-2 text-decoration-none mb-3 p-2 px-3 rounded border">
+            <i class="bi bi-clipboard-check text-secondary"></i>
+            @if (Model.OverdueCount > 0)
+            {
+                <span class="badge bg-danger">Zaległe: @Model.OverdueCount</span>
+            }
+            @if (Model.TodayCount > 0)
+            {
+                <span class="badge bg-warning text-dark">Na dziś: @Model.TodayCount</span>
+            }
+            <span class="text-muted small">Zobacz moje zadania</span>
+        </a>
+    }
+
     <div class="row mb-4 g-2">
         <div class="col-md-8">
             <input type="text" id="boardSearch" class="form-control form-control-lg border-2"
@@ -29,7 +45,7 @@
     </div>
 
     <div id="boardList">
-        @foreach (var board in Model)
+        @foreach (var board in Model.Boards)
         {
             <a asp-controller="Board" asp-action="Index" asp-route-id="@board.Id"
                class="card mb-3 shadow-sm border-0 board-item text-decoration-none">
@@ -54,7 +70,7 @@
                 </div>
             </a>
         }
-        @if (!Model.Any())
+        @if (!Model.Boards.Any())
         {
             <p class="text-muted">Nie masz jeszcze żadnej tablicy. Utwórz pierwszą przyciskiem „Nowa tablica".</p>
         }

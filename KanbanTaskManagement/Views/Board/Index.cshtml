@@ -27,16 +27,16 @@
             <a asp-controller="Calendar" asp-action="Index" asp-route-boardId="@board.Id" class="btn btn-light btn-sm">
                 <i class="bi bi-calendar3 me-1"></i>Kalendarz
             </a>
-            @if (access.CanManageBoard)
-            {
-                <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#themeModal">
-                    <i class="bi bi-palette me-1"></i>Wygląd
-                </button>
-            }
             @if (access.CanManageMembers || access.CanManageBoard)
             {
                 <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#shareModal">
                     <i class="bi bi-people-fill me-1"></i>Udostępnianie
+                </button>
+            }
+            @if (access.CanManageBoard)
+            {
+                <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#settingsModal">
+                    <i class="bi bi-gear me-1"></i>Ustawienia
                 </button>
             }
         </div>
@@ -56,6 +56,15 @@
         }
     </div>
 </div>
+
+@if (access.CanEditTasks)
+{
+    <form id="moveForm" asp-controller="Board" asp-action="MoveTask" method="post" class="d-none">
+        <input type="hidden" name="boardId" value="@board.Id" />
+        <input type="hidden" name="taskId" id="moveTaskId" />
+        <input type="hidden" name="targetColumn" id="moveTargetColumn" />
+    </form>
+}
 
 <div class="modal fade" id="taskModal" tabindex="-1">
     <div class="modal-dialog">
@@ -224,14 +233,24 @@
 
 @if (access.CanManageBoard)
 {
-    <div class="modal fade" id="themeModal" tabindex="-1">
+    <div class="modal fade" id="settingsModal" tabindex="-1">
         <div class="modal-dialog">
-            <form asp-controller="Board" asp-action="SetTheme" method="post" class="modal-content">
+            <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Wygląd tablicy</h5>
+                    <h5 class="modal-title">Ustawienia tablicy</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
+                    <form asp-controller="Board" asp-action="RenameBoard" method="post" class="mb-4">
+                        <label class="form-label fw-bold">Nazwa</label>
+                        <div class="input-group">
+                            <input type="hidden" name="boardId" value="@board.Id" />
+                            <input type="text" name="name" value="@board.Name" class="form-control" maxlength="80" required />
+                            <button type="submit" class="btn btn-outline-primary">Zapisz</button>
+                        </div>
+                    </form>
+
+                    <form asp-controller="Board" asp-action="SetTheme" method="post">
                     <input type="hidden" name="boardId" value="@board.Id" />
 
                     <label class="form-label fw-bold">Pasek nagłówka (gradient)</label>
@@ -261,12 +280,25 @@
                             <input type="color" name="doneColor" value="@theme.DoneColor" class="form-control form-control-color" />
                         </div>
                     </div>
+                    <div class="text-end mt-3">
+                        <button type="submit" class="btn btn-primary">Zapisz wygląd</button>
+                    </div>
+                    </form>
+
+                    @if (access.CanDeleteBoard)
+                    {
+                        <hr class="my-4" />
+                        <label class="form-label fw-bold text-danger">Strefa niebezpieczna</label>
+                        <form asp-controller="Board" asp-action="DeleteBoard" method="post"
+                              onsubmit="return confirm('Usunąć tablicę „@board.Name” wraz ze wszystkimi zadaniami? Tej operacji nie można cofnąć.')">
+                            <input type="hidden" name="boardId" value="@board.Id" />
+                            <button type="submit" class="btn btn-outline-danger">
+                                <i class="bi bi-trash me-1"></i>Usuń tablicę
+                            </button>
+                        </form>
+                    }
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
-                    <button type="submit" class="btn btn-primary">Zapisz</button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 }
@@ -287,6 +319,42 @@
             const assigned = (button.getAttribute('data-bs-assigned') || '').split(',').filter(Boolean);
             modal.querySelectorAll('input[name="assignedUsers"]').forEach(function (cb) {
                 cb.checked = assigned.indexOf(cb.value) !== -1;
+            });
+        });
+    })();
+
+    (function () {
+        const moveForm = document.getElementById('moveForm');
+        if (!moveForm) return;
+
+        let dragged = null;
+
+        document.querySelectorAll('.task-card[draggable="true"]').forEach(function (card) {
+            card.addEventListener('dragstart', function (e) {
+                dragged = card.getAttribute('data-bs-id');
+                card.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+            });
+            card.addEventListener('dragend', function () {
+                card.classList.remove('dragging');
+            });
+        });
+
+        document.querySelectorAll('.kanban-drop').forEach(function (zone) {
+            zone.addEventListener('dragover', function (e) {
+                e.preventDefault();
+                zone.classList.add('drop-hover');
+            });
+            zone.addEventListener('dragleave', function () {
+                zone.classList.remove('drop-hover');
+            });
+            zone.addEventListener('drop', function (e) {
+                e.preventDefault();
+                zone.classList.remove('drop-hover');
+                if (!dragged) return;
+                document.getElementById('moveTaskId').value = dragged;
+                document.getElementById('moveTargetColumn').value = zone.getAttribute('data-drop-column');
+                moveForm.submit();
             });
         });
     })();
