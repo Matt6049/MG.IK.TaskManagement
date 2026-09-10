@@ -1,5 +1,8 @@
 using KanbanTaskManagement.Data;
+using KanbanTaskManagement.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc.Authorization;
 
 namespace KanbanTaskManagement
 {
@@ -14,12 +17,23 @@ namespace KanbanTaskManagement
             builder.Services.Configure<DbSettings>(databaseSettings);
             builder.Services.AddScoped<MongoDBContext>();
 
+            builder.Services.AddHttpContextAccessor();
+            builder.Services.AddScoped<ICurrentUser, CurrentUserService>();
 
-            builder.Services.AddControllersWithViews();
+            var requireAuth = new AuthorizationPolicyBuilder()
+                .RequireAuthenticatedUser()
+                .Build();
+
+            builder.Services.AddControllersWithViews(options => {
+                options.Filters.Add(new AuthorizeFilter(requireAuth));
+            });
             builder.Services.AddRazorPages();
             builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
                 .AddCookie(options => {
-                    options.LoginPath = "/Login";
+                    options.LoginPath = "/Account/Login";
+                    options.LogoutPath = "/Account/Logout";
+                    options.AccessDeniedPath = "/Account/Login";
+                    options.ReturnUrlParameter = "returnUrl";
                     options.ExpireTimeSpan = TimeSpan.FromDays(3);
                     options.SlidingExpiration = true;
                     options.Cookie.HttpOnly = true;
@@ -43,7 +57,7 @@ namespace KanbanTaskManagement
 
 			app.UseAuthentication();
 			app.UseAuthorization();
-            
+
 
             app.MapControllerRoute(
                 name: "default",

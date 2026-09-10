@@ -46,18 +46,22 @@
                 <div class="dropdown mb-4 border-bottom border-secondary pb-3">
                     <a href="#" class="d-flex align-items-center link-light text-decoration-none dropdown-toggle p-2 sidebar-dropdown-toggle" id="sidebarDropdownUser" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="bi bi-person-circle fs-1 me-3" style="color: #00adb5; vertical-align: middle;"></i>
-                        <span class="fw-semibold fs-5 text-light">Jan Kowalski</span>
+                        <span class="fw-semibold fs-5 text-light">@(User.Identity?.Name ?? "Gość")</span>
                     </a>
                     <ul class="dropdown-menu shadow" aria-labelledby="sidebarDropdownUser">
                         <li>
-                        
                             <a class="dropdown-item" asp-controller="User" asp-action="Profile">
                                 <i class="bi bi-person me-2"></i> Mój profil
                             </a>
-                        
                         </li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-danger" href="#">Wyloguj się</a></li>
+                        <li>
+                            <form asp-controller="Account" asp-action="Logout" method="post" class="px-1">
+                                <button type="submit" class="dropdown-item text-danger">
+                                    <i class="bi bi-box-arrow-right me-2"></i> Wyloguj się
+                                </button>
+                            </form>
+                        </li>
                     </ul>
                 </div>
                 <ul class="nav nav-pills flex-column mb-auto">
