@@ -2,6 +2,7 @@
 @{
     var board = Model.Board;
     var access = Model.Access;
+    var theme = board.Theme;
 }
 
 <style>
@@ -20,12 +21,18 @@
 
 <div class="container-fluid py-4">
     <div class="p-3 mb-4 rounded d-flex justify-content-between align-items-center"
-         style="background: linear-gradient(to right, #008080 0%, #000000 100%);">
+         style="background: linear-gradient(to right, @theme.HeaderFrom 0%, @theme.HeaderTo 100%);">
         <h2 class="m-0 text-white">@board.Name</h2>
         <div class="d-flex gap-2">
             <a asp-controller="Calendar" asp-action="Index" asp-route-boardId="@board.Id" class="btn btn-light btn-sm">
                 <i class="bi bi-calendar3 me-1"></i>Kalendarz
             </a>
+            @if (access.CanManageBoard)
+            {
+                <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#themeModal">
+                    <i class="bi bi-palette me-1"></i>Wygląd
+                </button>
+            }
             @if (access.CanManageMembers || access.CanManageBoard)
             {
                 <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#shareModal">
@@ -44,7 +51,7 @@
         @foreach (var col in board.Columns)
         {
             <div class="flex-fill" style="min-width: 300px;">
-                <partial name="_KanbanColumn" model="@(new KanbanColumnViewModel { BoardId = board.Id, Column = col, CanEdit = access.CanEditTasks })" />
+                <partial name="_KanbanColumn" model="@(new KanbanColumnViewModel { BoardId = board.Id, Column = col, CanEdit = access.CanEditTasks, HeaderColor = theme.ColumnColor(col.Type) })" />
             </div>
         }
     </div>
@@ -69,7 +76,7 @@
                         <label class="form-label">Opis</label>
                         <textarea name="newDescription" id="editTaskDesc" class="form-control bg-dark text-white border-secondary" @(access.CanEditTasks ? null : "readonly")></textarea>
                     </div>
-                    <div class="row g-2">
+                    <div class="row g-2 mb-3">
                         <div class="col">
                             <label class="form-label">Rozpoczęcie</label>
                             <input type="date" name="startDate" id="editTaskStart" class="form-control bg-dark text-white border-secondary" @(access.CanEditTasks ? null : "readonly") />
@@ -78,7 +85,32 @@
                             <label class="form-label">Termin</label>
                             <input type="date" name="dueDate" id="editTaskDue" class="form-control bg-dark text-white border-secondary" @(access.CanEditTasks ? null : "readonly") />
                         </div>
+                        <div class="col">
+                            <label class="form-label">Priorytet</label>
+                            <select name="priority" id="editTaskPriority" class="form-select bg-dark text-white border-secondary" @(access.CanEditTasks ? null : "disabled")>
+                                @foreach (var p in RoleLabels.Priorities)
+                                {
+                                    <option value="@((int)p)">@p.PolishName()</option>
+                                }
+                            </select>
+                        </div>
                     </div>
+
+                    @if (Model.Assignable.Any())
+                    {
+                        <div>
+                            <label class="form-label">Przypisani</label>
+                            <div class="d-flex flex-wrap gap-3 border border-secondary rounded p-2">
+                                @foreach (var name in Model.Assignable)
+                                {
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="assignedUsers" value="@name" id="assign-@name" @(access.CanEditTasks ? null : "disabled") />
+                                        <label class="form-check-label" for="assign-@name">@name</label>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
                 </div>
                 @if (access.CanEditTasks)
                 {
@@ -190,6 +222,55 @@
     </div>
 }
 
+@if (access.CanManageBoard)
+{
+    <div class="modal fade" id="themeModal" tabindex="-1">
+        <div class="modal-dialog">
+            <form asp-controller="Board" asp-action="SetTheme" method="post" class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Wygląd tablicy</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="boardId" value="@board.Id" />
+
+                    <label class="form-label fw-bold">Pasek nagłówka (gradient)</label>
+                    <div class="d-flex gap-3 mb-4">
+                        <div>
+                            <label class="form-label small">Od</label>
+                            <input type="color" name="headerFrom" value="@theme.HeaderFrom" class="form-control form-control-color" />
+                        </div>
+                        <div>
+                            <label class="form-label small">Do</label>
+                            <input type="color" name="headerTo" value="@theme.HeaderTo" class="form-control form-control-color" />
+                        </div>
+                    </div>
+
+                    <label class="form-label fw-bold">Nagłówki kolumn</label>
+                    <div class="d-flex gap-3">
+                        <div>
+                            <label class="form-label small">Backlog</label>
+                            <input type="color" name="backlogColor" value="@theme.BacklogColor" class="form-control form-control-color" />
+                        </div>
+                        <div>
+                            <label class="form-label small">W toku</label>
+                            <input type="color" name="inProgressColor" value="@theme.InProgressColor" class="form-control form-control-color" />
+                        </div>
+                        <div>
+                            <label class="form-label small">Zrobione</label>
+                            <input type="color" name="doneColor" value="@theme.DoneColor" class="form-control form-control-color" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="submit" class="btn btn-primary">Zapisz</button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
 <script>
     (function () {
         const modal = document.getElementById('taskModal');
@@ -201,6 +282,12 @@
             document.getElementById('editTaskDesc').value = button.getAttribute('data-bs-desc') || '';
             document.getElementById('editTaskStart').value = button.getAttribute('data-bs-start') || '';
             document.getElementById('editTaskDue').value = button.getAttribute('data-bs-due') || '';
+            document.getElementById('editTaskPriority').value = button.getAttribute('data-bs-priority') || '0';
+
+            const assigned = (button.getAttribute('data-bs-assigned') || '').split(',').filter(Boolean);
+            modal.querySelectorAll('input[name="assignedUsers"]').forEach(function (cb) {
+                cb.checked = assigned.indexOf(cb.value) !== -1;
+            });
         });
     })();
 </script>
