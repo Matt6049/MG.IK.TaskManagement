@@ -1,7 +1,10 @@
-﻿@model KanbanTaskManagement.Models.Board
+@model KanbanTaskManagement.ViewModels.BoardDetailsViewModel
+@{
+    var board = Model.Board;
+    var access = Model.Access;
+}
 
 <style>
-    /* Definicja stylu neonowego przycisku */
     .btn-neon {
         border: none;
         color: white;
@@ -16,15 +19,27 @@
 </style>
 
 <div class="container-fluid py-4">
-    <div class="p-3 mb-4 rounded" style="background: linear-gradient(to right, #008080 0%, #000000 100%);">
-        <h2 class="m-0 text-white">@Model.Name</h2>
+    <div class="p-3 mb-4 rounded d-flex justify-content-between align-items-center"
+         style="background: linear-gradient(to right, #008080 0%, #000000 100%);">
+        <h2 class="m-0 text-white">@board.Name</h2>
+        @if (access.CanManageMembers || access.CanManageBoard)
+        {
+            <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#shareModal">
+                <i class="bi bi-people-fill me-1"></i>Udostępnianie
+            </button>
+        }
     </div>
 
+    @if (TempData["BoardError"] is string boardError)
+    {
+        <div class="alert alert-danger">@boardError</div>
+    }
+
     <div class="d-flex align-items-start gap-3">
-        @foreach (var col in Model.Columns)
+        @foreach (var col in board.Columns)
         {
             <div class="flex-fill" style="min-width: 300px;">
-                <partial name="_KanbanColumn" model="col" />
+                <partial name="_KanbanColumn" model="@(new KanbanColumnViewModel { BoardId = board.Id, Column = col, CanEdit = access.CanEditTasks })" />
             </div>
         }
     </div>
@@ -35,42 +50,140 @@
         <div class="modal-content bg-dark text-white border-secondary">
             <form asp-controller="Board" asp-action="UpdateTask" method="post">
                 <div class="modal-header border-secondary">
-                    <h5 class="modal-title">Edycja zadania</h5>
+                    <h5 class="modal-title">@(access.CanEditTasks ? "Edycja zadania" : "Zadanie")</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <input type="hidden" name="boardId" id="editTaskBoard"/>
+                    <input type="hidden" name="boardId" value="@board.Id" />
                     <input type="hidden" name="taskId" id="editTaskId" />
                     <div class="mb-3">
                         <label class="form-label">Nazwa zadania</label>
-                        <input type="text" name="name" id="editTaskName" class="form-control bg-dark text-white border-secondary" required />
+                        <input type="text" name="newName" id="editTaskName" class="form-control bg-dark text-white border-secondary" required @(access.CanEditTasks ? null : "readonly") />
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Opis</label>
-                        <textarea name="description" id="editTaskDesc" class="form-control bg-dark text-white border-secondary"></textarea>
+                        <textarea name="newDescription" id="editTaskDesc" class="form-control bg-dark text-white border-secondary" @(access.CanEditTasks ? null : "readonly")></textarea>
                     </div>
                 </div>
-                <div class="modal-footer border-secondary">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
-                    <button type="submit" class="btn btn-neon">Zapisz zmiany</button>
-                </div>
+                @if (access.CanEditTasks)
+                {
+                    <div class="modal-footer border-secondary justify-content-between">
+                        <button type="submit" formaction="@Url.Action("DeleteTask")" class="btn btn-outline-danger"
+                                onclick="return confirm('Usunąć zadanie?')">
+                            <i class="bi bi-trash"></i> Usuń
+                        </button>
+                        <div>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                            <button type="submit" class="btn btn-neon">Zapisz zmiany</button>
+                        </div>
+                    </div>
+                }
             </form>
         </div>
     </div>
 </div>
 
-<script>
-    let taskModal = document.getElementById('taskModal');
-    taskModal.addEventListener('show.bs.modal', function (event) {
-        const boardInput = taskModal.getElementById('editTaskBoard');
-        const idInput = taskModal.getElementById('editTaskId');
-        const nameInput = taskModal.getElementById('editTaskName');
-        const descInput = taskModal.getElementById('editTaskDesc');
+@if (access.CanManageMembers || access.CanManageBoard)
+{
+    <div class="modal fade" id="shareModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Udostępnianie tablicy</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    @if (access.CanManageBoard)
+                    {
+                        <h6>Grupa</h6>
+                        <form asp-controller="Board" asp-action="SetGroup" method="post" class="d-flex gap-2 mb-4">
+                            <input type="hidden" name="boardId" value="@board.Id" />
+                            <select name="groupId" class="form-select">
+                                <option value="">— brak grupy —</option>
+                                @foreach (var g in Model.Groups)
+                                {
+                                    <option value="@g.Id" selected="@(g.Id == board.GroupId)">@g.Name</option>
+                                }
+                            </select>
+                            <button type="submit" class="btn btn-outline-primary">Zapisz</button>
+                        </form>
+                        @if (board.GroupId != MongoDB.Bson.ObjectId.Empty && Model.Groups.All(g => g.Id != board.GroupId))
+                        {
+                            <p class="text-muted small">Powiązana z grupą „@(Model.LinkedGroupName ?? "?")", którą zarządza ktoś inny.</p>
+                        }
+                    }
 
-        let button = event.relatedTarget;
-        boardInput.value = @Model.Id;
-        idInput.value = button.getAttribute('data-bs-id');
-        nameInput.value = button.getAttribute('data-bs-name');
-        descInput.value = button.getAttribute('data-bs-desc');
-    });
+                    @if (access.CanManageMembers)
+                    {
+                        <h6>Osoby z bezpośrednim dostępem</h6>
+                        <table class="table align-middle">
+                            <tbody>
+                                @foreach (var m in Model.Members)
+                                {
+                                    <tr>
+                                        <td>@m.Username</td>
+                                        <td>
+                                            @if (m.IsOwner)
+                                            {
+                                                <span class="badge bg-secondary">Właściciel</span>
+                                            }
+                                            else
+                                            {
+                                                <form asp-controller="Board" asp-action="SetMemberRole" method="post" class="d-inline">
+                                                    <input type="hidden" name="boardId" value="@board.Id" />
+                                                    <input type="hidden" name="userId" value="@m.UserId" />
+                                                    <select name="role" class="form-select form-select-sm w-auto d-inline" onchange="this.form.submit()">
+                                                        @foreach (var r in RoleLabels.BoardAssignable)
+                                                        {
+                                                            <option value="@((int)r)" selected="@(m.Role == r)">@r.PolishName()</option>
+                                                        }
+                                                    </select>
+                                                </form>
+                                            }
+                                        </td>
+                                        <td class="text-end">
+                                            @if (!m.IsOwner)
+                                            {
+                                                <form asp-controller="Board" asp-action="RemoveMember" method="post" class="d-inline"
+                                                      onsubmit="return confirm('Odebrać dostęp użytkownikowi @m.Username?')">
+                                                    <input type="hidden" name="boardId" value="@board.Id" />
+                                                    <input type="hidden" name="userId" value="@m.UserId" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg"></i></button>
+                                                </form>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+
+                        <form asp-controller="Board" asp-action="AddMember" method="post" class="d-flex gap-2">
+                            <input type="hidden" name="boardId" value="@board.Id" />
+                            <input type="text" name="username" class="form-control" placeholder="Nazwa użytkownika" required />
+                            <select name="role" class="form-select w-auto">
+                                @foreach (var r in RoleLabels.BoardAssignable)
+                                {
+                                    <option value="@((int)r)" selected="@(r == KanbanTaskManagement.Models.GroupRole.WRITE)">@r.PolishName()</option>
+                                }
+                            </select>
+                            <button type="submit" class="btn btn-outline-primary">Dodaj</button>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<script>
+    (function () {
+        const modal = document.getElementById('taskModal');
+        if (!modal) return;
+        modal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            document.getElementById('editTaskId').value = button.getAttribute('data-bs-id');
+            document.getElementById('editTaskName').value = button.getAttribute('data-bs-name');
+            document.getElementById('editTaskDesc').value = button.getAttribute('data-bs-desc') || '';
+        });
+    })();
 </script>
