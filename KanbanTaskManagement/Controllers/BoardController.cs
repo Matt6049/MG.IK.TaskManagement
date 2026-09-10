@@ -262,6 +262,38 @@ public class BoardController : Controller {
 			? value.ToLowerInvariant()
 			: fallback;
 
+	[HttpPost]
+	[ValidateAntiForgeryToken]
+	public async Task<IActionResult> RenameBoard(string boardId, string name) {
+		var boardRes = await repository.GetById(boardId);
+		if (!boardRes.Ok)
+			return boardRes.ErrorStatus;
+
+		var access = await ResolveAccess(boardRes.Result!);
+		if (!access.CanManageBoard)
+			return Forbid();
+		if (string.IsNullOrWhiteSpace(name))
+			return RedirectToAction("Index", new { id = boardId });
+
+		await repository.SetName(boardRes.Result!.Id, name.Trim());
+		return RedirectToAction("Index", new { id = boardId });
+	}
+
+	[HttpPost]
+	[ValidateAntiForgeryToken]
+	public async Task<IActionResult> DeleteBoard(string boardId) {
+		var boardRes = await repository.GetById(boardId);
+		if (!boardRes.Ok)
+			return boardRes.ErrorStatus;
+
+		var access = await ResolveAccess(boardRes.Result!);
+		if (!access.CanDeleteBoard)
+			return Forbid();
+
+		await repository.Delete(boardRes.Result!.Id);
+		return RedirectToAction("Index", "Dashboard");
+	}
+
 	private async Task<(Board? board, IActionResult? error)> LoadForEdit(string boardId) {
 		var res = await repository.GetById(boardId);
 		if (!res.Ok)

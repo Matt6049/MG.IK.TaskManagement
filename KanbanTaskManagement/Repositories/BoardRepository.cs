@@ -13,6 +13,16 @@ public class BoardRepository : DocumentRepository<Board> {
 		await Collection.InsertOneAsync(board);
 	}
 
+	public async Task<UpdateQueryResult<Board>> SetName(ObjectId boardId, string name) {
+		return await Collection.UpdateOneAsync(
+			b => b.Id == boardId,
+			Builders<Board>.Update.Set(b => b.Name, name));
+	}
+
+	public async Task<DeleteResult> Delete(ObjectId boardId) {
+		return await Collection.DeleteOneAsync(b => b.Id == boardId);
+	}
+
 	public async Task<ReadQueryResult<Board>> GetByName(string boardName) {
 		var res = await Collection.FindAsync(board => board.Name == boardName);
 		return await res.FirstOrDefaultAsync();

@@ -29,4 +29,11 @@ public static class RoleLabels {
 		TaskPriority.HIGH => "Wysoki",
 		_ => priority.ToString(),
 	};
+
+	public static string PolishName(this ColumnType type) => type switch {
+		ColumnType.BACKLOG => "Do zrobienia",
+		ColumnType.IN_PROGRESS => "W toku",
+		ColumnType.DONE => "Zrobione",
+		_ => type.ToString(),
+	};
 }
