@@ -1,0 +1,111 @@
+﻿@model KanbanTaskManagement.ViewModels.DashboardViewModel
+@inject KanbanTaskManagement.Services.ICurrentUser CurrentUser
+
+<style>
+    .board-header {
+        transition: filter 0.3s ease-in-out;
+        color: white;
+        text-decoration: none;
+        display: block;
+    }
+
+        .board-header:hover {
+            filter: brightness(1.15);
+        }
+</style>
+
+<div class="container-fluid p-4">
+    @if (Model.OverdueCount > 0 || Model.TodayCount > 0)
+    {
+        <a asp-action="MyTasks" class="d-inline-flex align-items-center gap-2 text-decoration-none mb-3 p-2 px-3 rounded border">
+            <i class="bi bi-clipboard-check text-secondary"></i>
+            @if (Model.OverdueCount > 0)
+            {
+                <span class="badge bg-danger">Zaległe: @Model.OverdueCount</span>
+            }
+            @if (Model.TodayCount > 0)
+            {
+                <span class="badge bg-warning text-dark">Na dziś: @Model.TodayCount</span>
+            }
+            <span class="text-muted small">Zobacz moje zadania</span>
+        </a>
+    }
+
+    <div class="row mb-4 g-2">
+        <div class="col-md-8">
+            <input type="text" id="boardSearch" class="form-control form-control-lg border-2"
+                   placeholder="Wyszukaj tablicę po nazwie..." onkeyup="filterBoards()">
+        </div>
+        <div class="col-md-4 text-md-end">
+            <button class="btn btn-lg text-white w-100 w-md-auto" style="background: linear-gradient(to right, #008080 0%, #000000 100%);"
+                    data-bs-toggle="modal" data-bs-target="#createBoardModal">
+                <i class="bi bi-plus-circle me-2"></i>Nowa tablica
+            </button>
+        </div>
+    </div>
+
+    <div id="boardList">
+        @foreach (var board in Model.Boards)
+        {
+            <a asp-controller="Board" asp-action="Index" asp-route-id="@board.Id"
+               class="card mb-3 shadow-sm border-0 board-item text-decoration-none">
+                <div class="card-header pt-3 pb-3 board-header d-flex justify-content-between align-items-center"
+                     style="background: linear-gradient(to right, @board.Theme.HeaderFrom 0%, @board.Theme.HeaderTo 100%);">
+                    <div>
+                        <h5 class="fw-bold mb-0 board-name">
+                            <i class="bi bi-kanban-fill me-2"></i>@board.Name
+                        </h5>
+                        <small class="text-white-50">
+                            @if (board.OwnerId == CurrentUser.UserId)
+                            {
+                                <span>Twoja tablica</span>
+                            }
+                            else
+                            {
+                                <span>Udostępniona przez @board.OwnerName</span>
+                            }
+                        </small>
+                    </div>
+                    <i class="bi bi-arrow-right"></i>
+                </div>
+            </a>
+        }
+        @if (!Model.Boards.Any())
+        {
+            <p class="text-muted">Nie masz jeszcze żadnej tablicy. Utwórz pierwszą przyciskiem „Nowa tablica".</p>
+        }
+    </div>
+</div>
+
+<div class="modal fade" id="createBoardModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form asp-controller="Board" asp-action="CreateBoard" method="post" class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nowa tablica</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <label for="boardName" class="form-label">Nazwa tablicy</label>
+                <input type="text" name="boardName" id="boardName" class="form-control" maxlength="80" required autofocus>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                <button type="submit" class="btn text-white" style="background: linear-gradient(to right, #008080 0%, #000000 100%);">Utwórz</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function filterBoards() {
+            var input = document.getElementById('boardSearch').value.toLowerCase();
+            var boards = document.querySelectorAll('.board-item');
+
+            boards.forEach(function(board) {
+                var name = board.querySelector('.board-name').innerText.toLowerCase();
+                board.style.display = name.includes(input) ? "" : "none";
+            });
+        }
+    </script>
+}

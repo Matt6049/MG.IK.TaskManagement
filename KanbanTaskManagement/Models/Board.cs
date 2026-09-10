@@ -9,7 +9,8 @@ namespace KanbanTaskManagement.Models;
 
 //todo: activity logs
 
-public class Board {
+public class Board : IMongoDocument {
+	[BsonId]
 	public ObjectId Id { get; set; }
 
 	[BsonRequired]
@@ -18,11 +19,19 @@ public class Board {
 	[BsonRequired]
 	public bool IsUserOwned { get; set; }
 
-	[BsonRequired]
+
+    public ObjectId GroupId { get; set; }
+
+	public ObjectId OwnerId { get; set; }
+
 	public required string OwnerName { get; set; }
 
+	public List<BoardMember> Members { get; set; } = [];
+
+	public BoardTheme Theme { get; set; } = new();
+
 	[BsonRequired]
-	public Column[] Columns { get; set; } = [
+	public List<Column> Columns { get; set; } = [
 			new Column(){
 				Type=ColumnType.BACKLOG
 			},

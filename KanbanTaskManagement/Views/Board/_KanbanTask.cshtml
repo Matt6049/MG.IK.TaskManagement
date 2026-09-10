@@ -1,0 +1,47 @@
+﻿@model KanbanTaskManagement.Models.KanbanTask
+
+<div class="kanban-task card mb-3 shadow-sm border-0" style="background: rgba(255, 255, 255, 0.05); color: white;">
+    <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">@Model.Name</h5>
+
+        <button type="button"
+                class="btn btn-sm btn-outline-info"
+                data-bs-toggle="modal"
+                data-bs-target="#taskModal"
+                data-bs-id="@Model.Id"
+                data-bs-name="@Model.Name"
+                data-bs-desc="@Model.Description">
+            <i class="bi bi-pencil-square"></i>
+        </button>
+    </div>
+
+    <div class="card-body">
+        @switch (Model.Priority)
+        {
+            case TaskPriority.HIGH:
+                <span class="badge bg-danger">@Model.Priority</span>
+                break;
+            case TaskPriority.MEDIUM:
+                <span class="badge bg-warning text-dark">@Model.Priority</span>
+                break;
+            case TaskPriority.LOW:
+                <span class="badge bg-info">@Model.Priority</span>
+                break;
+        }
+
+        @if (!string.IsNullOrEmpty(Model.Description))
+        {
+            <p class="mt-2 small text-white-50">@Model.Description</p>
+        }
+    </div>
+
+    <div class="card-footer bg-transparent border-0 small">
+        <div class="text-white-50">Stworzone przez: <b>@Model.CreatorName</b></div>
+        @if (Model.AssignedUsers.Any())
+        {
+            <div class="mt-1">
+                Przypisani: @string.Join(", ", Model.AssignedUsers)
+            </div>
+        }
+    </div>
+</div>

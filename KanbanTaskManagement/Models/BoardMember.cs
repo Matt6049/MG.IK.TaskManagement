@@ -1,16 +1,9 @@
-﻿using MongoDB.Bson;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace KanbanTaskManagement.Models;
 
-public enum GroupRole {
-	READ_ONLY,
-	WRITE,
-	ADMIN,
-	OWNER
-}
-
-public class GroupMember {
+public class BoardMember {
 	public required ObjectId UserId { get; set; }
 
 	[BsonRequired]

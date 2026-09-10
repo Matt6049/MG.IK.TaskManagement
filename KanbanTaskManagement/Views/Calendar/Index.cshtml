@@ -1,0 +1,99 @@
+@{
+    ViewData["Title"] = "Kalendarz";
+    var boardId = ViewData["BoardId"] as string;
+    var groupId = ViewData["GroupId"] as string;
+    var scopeName = ViewData["ScopeName"] as string;
+}
+
+<div class="container-fluid p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="m-0">
+            Kalendarz
+            @if (scopeName is not null)
+            {
+                <small class="text-muted">— @scopeName</small>
+            }
+        </h2>
+        @if (boardId is not null)
+        {
+            <a asp-controller="Board" asp-action="Index" asp-route-id="@boardId" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-kanban me-1"></i>Wróć do tablicy
+            </a>
+        }
+    </div>
+
+    <div id="calendar" class="bg-white p-3 rounded shadow-sm"></div>
+</div>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/6.1.15/index.global.min.js"></script>
+    <style>
+        .fc-done .fc-event-title { text-decoration: line-through; opacity: .8; }
+        #calendar { --fc-border-color: #dee2e6; }
+    </style>
+    <script>
+        (function () {
+            const el = document.getElementById('calendar');
+            const boardId = @Json.Serialize(boardId);
+            const groupId = @Json.Serialize(groupId);
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const columnColor = { BACKLOG: '#6c757d', IN_PROGRESS: '#008080', DONE: '#198754' };
+
+            const calendar = new FullCalendar.Calendar(el, {
+                initialView: 'dayGridMonth',
+                locale: 'pl',
+                firstDay: 1,
+                height: 'auto',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,listMonth'
+                },
+                editable: true,
+                eventTimeFormat: { hour: '2-digit', minute: '2-digit' },
+                events: function (info, success, failure) {
+                    const params = new URLSearchParams({ from: info.startStr, to: info.endStr });
+                    if (boardId) params.set('boardId', boardId);
+                    if (groupId) params.set('groupId', groupId);
+
+                    fetch('/Calendar/Events?' + params.toString())
+                        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+                        .then(rows => success(rows.map(row => ({
+                            id: row.taskId,
+                            title: (boardId ? '' : row.boardName + ': ') + row.title,
+                            start: row.date,
+                            allDay: true,
+                            backgroundColor: row.done ? '#adb5bd' : (columnColor[row.columnType] || '#008080'),
+                            borderColor: row.done ? '#adb5bd' : (columnColor[row.columnType] || '#008080'),
+                            classNames: row.done ? ['fc-done'] : [],
+                            extendedProps: { boardId: row.boardId }
+                        }))))
+                        .catch(failure);
+                },
+                eventClick: function (info) {
+                    window.location = '/Board/Index/' + info.event.extendedProps.boardId;
+                },
+                eventDrop: function (info) {
+                    const body = new URLSearchParams({
+                        boardId: info.event.extendedProps.boardId,
+                        taskId: info.event.id,
+                        newDue: info.event.startStr,
+                        __RequestVerificationToken: token
+                    });
+                    fetch('/Calendar/Reschedule', { method: 'POST', body: body })
+                        .then(r => {
+                            if (!r.ok) {
+                                info.revert();
+                                alert('Nie udało się zmienić terminu zadania.');
+                            }
+                        })
+                        .catch(() => { info.revert(); });
+                }
+            });
+
+            calendar.render();
+        })();
+    </script>
+}

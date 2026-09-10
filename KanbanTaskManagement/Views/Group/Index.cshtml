@@ -1,0 +1,133 @@
+﻿@model List<KanbanTaskManagement.ViewModels.GroupDTO>
+
+<style>
+    .group-header {
+        transition: background 0.4s ease-in-out;
+        background: linear-gradient(to right, #008080 0%, #000000 100%);
+    }
+
+    .card:has(.collapse.show) .group-header {
+        background: linear-gradient(to right, #008080 0%, #20b2aa 100%) !important;
+    }
+
+    .btn-black {
+        background-color: #000000;
+        border: 1px solid #444;
+        color: white;
+    }
+
+        .btn-black:hover {
+            background-color: #1a1a1a;
+            color: white;
+            border-color: #666;
+        }
+</style>
+
+<div class="container-fluid p-4">
+    @if (TempData["GroupError"] is string groupError)
+    {
+        <div class="alert alert-danger">@groupError</div>
+    }
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <input type="text" id="groupSearch" class="form-control form-control-lg bg-dark text-white border-secondary" placeholder="Wyszukaj grupę..." onkeyup="filterGroups()">
+        </div>
+        <div class="col-md-6 text-md-end">
+            <button class="btn btn-black btn-lg" data-bs-toggle="modal" data-bs-target="#createGroupModal">
+                <i class="bi bi-plus-circle"></i> Nowa Grupa
+            </button>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <p class="text-muted">Nie należysz jeszcze do żadnej grupy. Utwórz pierwszą przyciskiem „Nowa Grupa".</p>
+    }
+
+    <div id="groups-list">
+        @foreach (var group in Model)
+        {
+            <partial name="_Group" model="group" />
+        }
+    </div>
+</div>
+
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form asp-controller="Group" asp-action="AddMember" method="post" class="modal-content bg-dark text-white border-secondary">
+            <div class="modal-header border-secondary"><h5 class="modal-title">Dodaj użytkownika</h5></div>
+            <div class="modal-body">
+                <input type="hidden" name="groupId" id="modalGroupId" />
+                <div class="mb-3">
+                    <label class="form-label">Nazwa użytkownika</label>
+                    <input type="text" name="username" class="form-control bg-dark text-white border-secondary" required />
+                </div>
+                <div>
+                    <label class="form-label">Rola</label>
+                    <select name="role" class="form-select bg-dark text-white border-secondary">
+                        @foreach (var r in RoleLabels.All)
+                        {
+                            <option value="@((int)r)" selected="@(r == KanbanTaskManagement.Models.GroupRole.WRITE)">@r.PolishName()</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer border-secondary"><button type="submit" class="btn btn-black">Zapisz</button></div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="createGroupModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form asp-controller="Group" asp-action="Create" method="post" class="modal-content bg-dark text-white border-secondary">
+            <div class="modal-header border-secondary"><h5 class="modal-title">Stwórz nową grupę</h5></div>
+            <div class="modal-body">
+                <input type="text" name="name" class="form-control bg-dark text-white border-secondary" placeholder="Nazwa grupy" required />
+            </div>
+            <div class="modal-footer border-secondary"><button type="submit" class="btn btn-black">Utwórz</button></div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('addUserModal').addEventListener('show.bs.modal', function (e) {
+            document.getElementById('modalGroupId').value = e.relatedTarget.getAttribute('data-bs-groupid');
+        });
+
+        function filterGroups() {
+            var input = document.getElementById('groupSearch').value.toLowerCase();
+            document.querySelectorAll('.group-item').forEach(g => {
+                g.style.display = g.querySelector('.group-name').innerText.toLowerCase().includes(input) ? "" : "none";
+            });
+        }
+    </script>
+
+    <script>
+        async function loadMembers(event){
+            let container = event.srcElement;
+            if(container.innerHTML.trim()) return;
+
+            let groupId = container.getAttribute("data-group-id");
+            let collapsible = bootstrap.Collapse.getInstance(container);
+            event.preventDefault();
+
+            try{
+                const response = await fetch(`/Group/GetGroupMembers?id=${groupId}`);
+                if(!response.ok) throw new Error(`Response status: ${response.status}`);
+
+                const result = await response.text();
+                container.innerHTML = result;
+                collapsible.show(); 
+            } catch(e){
+                console.error("Failed to load group members:", e);
+                container.innerHTML = "<p class='text-danger'>Ładowanie użytkowników nie powiodło się!</p>";
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function(){
+            document.getElementById("groups-list").addEventListener("show.bs.collapse", loadMembers);
+        }, {once:true})
+    </script>
+}

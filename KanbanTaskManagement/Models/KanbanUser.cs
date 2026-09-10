@@ -3,13 +3,13 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace KanbanTaskManagement.Models;
 
-public class User {
+public class KanbanUser : IMongoDocument {
 	public ObjectId Id { get; set; }
 
 	[BsonRequired]
 	public required string Username { get; set; }
 
-	public string? Email { get; set; } = null!;
+	public string? Email { get; set; } = null;
 
 	[BsonRequired]
 	public required string PasswordHash { get; set; }
@@ -21,6 +21,12 @@ public class User {
 	[BsonDateTimeOptions(
 		Kind = DateTimeKind.Utc,
 		Representation = BsonType.DateTime)]
-	public DateTime Created_at { get; set; }
+	public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+	[BsonRequired]
+	[BsonDateTimeOptions(
+		Kind = DateTimeKind.Utc,
+		Representation = BsonType.DateTime)]
+	public DateTime LastActive { get; set; } = DateTime.UtcNow;
 }
 

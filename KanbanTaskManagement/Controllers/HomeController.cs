@@ -1,8 +1,7 @@
 using System.Diagnostics;
-using KanbanTaskManagement.Data;
 using KanbanTaskManagement.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MongoDB.Driver;
 
 namespace KanbanTaskManagement.Controllers
 {
@@ -15,16 +14,24 @@ namespace KanbanTaskManagement.Controllers
             _logger = logger;
         }
 
-        public IActionResult Index([FromServices] MongoDBContext context)
+        public IActionResult Index()
         {
-            return View(context.BoardCollection.Find(Builders<Board>.Filter.Eq(b => b.IsUserOwned, true)).First());
+            return RedirectToAction("Index", "Dashboard");
         }
 
+        [AllowAnonymous]
         public IActionResult Privacy()
         {
             return View();
         }
 
+        [AllowAnonymous]
+        public IActionResult AccessDenied()
+        {
+            return View();
+        }
+
+        [AllowAnonymous]
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {

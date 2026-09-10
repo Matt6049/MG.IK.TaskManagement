@@ -1,0 +1,361 @@
+@model KanbanTaskManagement.ViewModels.BoardDetailsViewModel
+@{
+    var board = Model.Board;
+    var access = Model.Access;
+    var theme = board.Theme;
+}
+
+<style>
+    .btn-neon {
+        border: none;
+        color: white;
+        transition: 0.3s;
+        background: linear-gradient(to bottom, #000000 10%, #00d4ff 100%);
+    }
+
+        .btn-neon:hover {
+            filter: brightness(1.2);
+            box-shadow: 0 0 10px #00d4ff;
+        }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="p-3 mb-4 rounded d-flex justify-content-between align-items-center"
+         style="background: linear-gradient(to right, @theme.HeaderFrom 0%, @theme.HeaderTo 100%);">
+        <h2 class="m-0 text-white">@board.Name</h2>
+        <div class="d-flex gap-2">
+            <a asp-controller="Calendar" asp-action="Index" asp-route-boardId="@board.Id" class="btn btn-light btn-sm">
+                <i class="bi bi-calendar3 me-1"></i>Kalendarz
+            </a>
+            @if (access.CanManageMembers || access.CanManageBoard)
+            {
+                <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#shareModal">
+                    <i class="bi bi-people-fill me-1"></i>Udostępnianie
+                </button>
+            }
+            @if (access.CanManageBoard)
+            {
+                <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#settingsModal">
+                    <i class="bi bi-gear me-1"></i>Ustawienia
+                </button>
+            }
+        </div>
+    </div>
+
+    @if (TempData["BoardError"] is string boardError)
+    {
+        <div class="alert alert-danger">@boardError</div>
+    }
+
+    <div class="d-flex align-items-start gap-3">
+        @foreach (var col in board.Columns)
+        {
+            <div class="flex-fill" style="min-width: 300px;">
+                <partial name="_KanbanColumn" model="@(new KanbanColumnViewModel { BoardId = board.Id, Column = col, CanEdit = access.CanEditTasks, HeaderColor = theme.ColumnColor(col.Type) })" />
+            </div>
+        }
+    </div>
+</div>
+
+@if (access.CanEditTasks)
+{
+    <form id="moveForm" asp-controller="Board" asp-action="MoveTask" method="post" class="d-none">
+        <input type="hidden" name="boardId" value="@board.Id" />
+        <input type="hidden" name="taskId" id="moveTaskId" />
+        <input type="hidden" name="targetColumn" id="moveTargetColumn" />
+    </form>
+}
+
+<div class="modal fade" id="taskModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-white border-secondary">
+            <form asp-controller="Board" asp-action="UpdateTask" method="post">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title">@(access.CanEditTasks ? "Edycja zadania" : "Zadanie")</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="boardId" value="@board.Id" />
+                    <input type="hidden" name="taskId" id="editTaskId" />
+                    <div class="mb-3">
+                        <label class="form-label">Nazwa zadania</label>
+                        <input type="text" name="newName" id="editTaskName" class="form-control bg-dark text-white border-secondary" required @(access.CanEditTasks ? null : "readonly") />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Opis</label>
+                        <textarea name="newDescription" id="editTaskDesc" class="form-control bg-dark text-white border-secondary" @(access.CanEditTasks ? null : "readonly")></textarea>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col">
+                            <label class="form-label">Rozpoczęcie</label>
+                            <input type="date" name="startDate" id="editTaskStart" class="form-control bg-dark text-white border-secondary" @(access.CanEditTasks ? null : "readonly") />
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Termin</label>
+                            <input type="date" name="dueDate" id="editTaskDue" class="form-control bg-dark text-white border-secondary" @(access.CanEditTasks ? null : "readonly") />
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Priorytet</label>
+                            <select name="priority" id="editTaskPriority" class="form-select bg-dark text-white border-secondary" @(access.CanEditTasks ? null : "disabled")>
+                                @foreach (var p in RoleLabels.Priorities)
+                                {
+                                    <option value="@((int)p)">@p.PolishName()</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    @if (Model.Assignable.Any())
+                    {
+                        <div>
+                            <label class="form-label">Przypisani</label>
+                            <div class="d-flex flex-wrap gap-3 border border-secondary rounded p-2">
+                                @foreach (var name in Model.Assignable)
+                                {
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="assignedUsers" value="@name" id="assign-@name" @(access.CanEditTasks ? null : "disabled") />
+                                        <label class="form-check-label" for="assign-@name">@name</label>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+                @if (access.CanEditTasks)
+                {
+                    <div class="modal-footer border-secondary justify-content-between">
+                        <button type="submit" formaction="@Url.Action("DeleteTask")" class="btn btn-outline-danger"
+                                onclick="return confirm('Usunąć zadanie?')">
+                            <i class="bi bi-trash"></i> Usuń
+                        </button>
+                        <div>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                            <button type="submit" class="btn btn-neon">Zapisz zmiany</button>
+                        </div>
+                    </div>
+                }
+            </form>
+        </div>
+    </div>
+</div>
+
+@if (access.CanManageMembers || access.CanManageBoard)
+{
+    <div class="modal fade" id="shareModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Udostępnianie tablicy</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    @if (access.CanManageBoard)
+                    {
+                        <h6>Grupa</h6>
+                        <form asp-controller="Board" asp-action="SetGroup" method="post" class="d-flex gap-2 mb-4">
+                            <input type="hidden" name="boardId" value="@board.Id" />
+                            <select name="groupId" class="form-select">
+                                <option value="">— brak grupy —</option>
+                                @foreach (var g in Model.Groups)
+                                {
+                                    <option value="@g.Id" selected="@(g.Id == board.GroupId)">@g.Name</option>
+                                }
+                            </select>
+                            <button type="submit" class="btn btn-outline-primary">Zapisz</button>
+                        </form>
+                        @if (board.GroupId != MongoDB.Bson.ObjectId.Empty && Model.Groups.All(g => g.Id != board.GroupId))
+                        {
+                            <p class="text-muted small">Powiązana z grupą „@(Model.LinkedGroupName ?? "?")", którą zarządza ktoś inny.</p>
+                        }
+                    }
+
+                    @if (access.CanManageMembers)
+                    {
+                        <h6>Osoby z bezpośrednim dostępem</h6>
+                        <table class="table align-middle">
+                            <tbody>
+                                @foreach (var m in Model.Members)
+                                {
+                                    <tr>
+                                        <td>@m.Username</td>
+                                        <td>
+                                            @if (m.IsOwner)
+                                            {
+                                                <span class="badge bg-secondary">Właściciel</span>
+                                            }
+                                            else
+                                            {
+                                                <form asp-controller="Board" asp-action="SetMemberRole" method="post" class="d-inline">
+                                                    <input type="hidden" name="boardId" value="@board.Id" />
+                                                    <input type="hidden" name="userId" value="@m.UserId" />
+                                                    <select name="role" class="form-select form-select-sm w-auto d-inline" onchange="this.form.submit()">
+                                                        @foreach (var r in RoleLabels.BoardAssignable)
+                                                        {
+                                                            <option value="@((int)r)" selected="@(m.Role == r)">@r.PolishName()</option>
+                                                        }
+                                                    </select>
+                                                </form>
+                                            }
+                                        </td>
+                                        <td class="text-end">
+                                            @if (!m.IsOwner)
+                                            {
+                                                <form asp-controller="Board" asp-action="RemoveMember" method="post" class="d-inline"
+                                                      onsubmit="return confirm('Odebrać dostęp użytkownikowi @m.Username?')">
+                                                    <input type="hidden" name="boardId" value="@board.Id" />
+                                                    <input type="hidden" name="userId" value="@m.UserId" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg"></i></button>
+                                                </form>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+
+                        <form asp-controller="Board" asp-action="AddMember" method="post" class="d-flex gap-2">
+                            <input type="hidden" name="boardId" value="@board.Id" />
+                            <input type="text" name="username" class="form-control" placeholder="Nazwa użytkownika" required />
+                            <select name="role" class="form-select w-auto">
+                                @foreach (var r in RoleLabels.BoardAssignable)
+                                {
+                                    <option value="@((int)r)" selected="@(r == KanbanTaskManagement.Models.GroupRole.WRITE)">@r.PolishName()</option>
+                                }
+                            </select>
+                            <button type="submit" class="btn btn-outline-primary">Dodaj</button>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (access.CanManageBoard)
+{
+    <div class="modal fade" id="settingsModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Ustawienia tablicy</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form asp-controller="Board" asp-action="RenameBoard" method="post" class="mb-4">
+                        <label class="form-label fw-bold">Nazwa</label>
+                        <div class="input-group">
+                            <input type="hidden" name="boardId" value="@board.Id" />
+                            <input type="text" name="name" value="@board.Name" class="form-control" maxlength="80" required />
+                            <button type="submit" class="btn btn-outline-primary">Zapisz</button>
+                        </div>
+                    </form>
+
+                    <form asp-controller="Board" asp-action="SetTheme" method="post">
+                    <input type="hidden" name="boardId" value="@board.Id" />
+
+                    <label class="form-label fw-bold">Pasek nagłówka (gradient)</label>
+                    <div class="d-flex gap-3 mb-4">
+                        <div>
+                            <label class="form-label small">Od</label>
+                            <input type="color" name="headerFrom" value="@theme.HeaderFrom" class="form-control form-control-color" />
+                        </div>
+                        <div>
+                            <label class="form-label small">Do</label>
+                            <input type="color" name="headerTo" value="@theme.HeaderTo" class="form-control form-control-color" />
+                        </div>
+                    </div>
+
+                    <label class="form-label fw-bold">Nagłówki kolumn</label>
+                    <div class="d-flex gap-3">
+                        <div>
+                            <label class="form-label small">Backlog</label>
+                            <input type="color" name="backlogColor" value="@theme.BacklogColor" class="form-control form-control-color" />
+                        </div>
+                        <div>
+                            <label class="form-label small">W toku</label>
+                            <input type="color" name="inProgressColor" value="@theme.InProgressColor" class="form-control form-control-color" />
+                        </div>
+                        <div>
+                            <label class="form-label small">Zrobione</label>
+                            <input type="color" name="doneColor" value="@theme.DoneColor" class="form-control form-control-color" />
+                        </div>
+                    </div>
+                    <div class="text-end mt-3">
+                        <button type="submit" class="btn btn-primary">Zapisz wygląd</button>
+                    </div>
+                    </form>
+
+                    @if (access.CanDeleteBoard)
+                    {
+                        <hr class="my-4" />
+                        <label class="form-label fw-bold text-danger">Strefa niebezpieczna</label>
+                        <form asp-controller="Board" asp-action="DeleteBoard" method="post"
+                              onsubmit="return confirm('Usunąć tablicę „@board.Name” wraz ze wszystkimi zadaniami? Tej operacji nie można cofnąć.')">
+                            <input type="hidden" name="boardId" value="@board.Id" />
+                            <button type="submit" class="btn btn-outline-danger">
+                                <i class="bi bi-trash me-1"></i>Usuń tablicę
+                            </button>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<script>
+    (function () {
+        const modal = document.getElementById('taskModal');
+        if (!modal) return;
+        modal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            document.getElementById('editTaskId').value = button.getAttribute('data-bs-id');
+            document.getElementById('editTaskName').value = button.getAttribute('data-bs-name');
+            document.getElementById('editTaskDesc').value = button.getAttribute('data-bs-desc') || '';
+            document.getElementById('editTaskStart').value = button.getAttribute('data-bs-start') || '';
+            document.getElementById('editTaskDue').value = button.getAttribute('data-bs-due') || '';
+            document.getElementById('editTaskPriority').value = button.getAttribute('data-bs-priority') || '0';
+
+            const assigned = (button.getAttribute('data-bs-assigned') || '').split(',').filter(Boolean);
+            modal.querySelectorAll('input[name="assignedUsers"]').forEach(function (cb) {
+                cb.checked = assigned.indexOf(cb.value) !== -1;
+            });
+        });
+    })();
+
+    (function () {
+        const moveForm = document.getElementById('moveForm');
+        if (!moveForm) return;
+
+        let dragged = null;
+
+        document.querySelectorAll('.task-card[draggable="true"]').forEach(function (card) {
+            card.addEventListener('dragstart', function (e) {
+                dragged = card.getAttribute('data-bs-id');
+                card.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+            });
+            card.addEventListener('dragend', function () {
+                card.classList.remove('dragging');
+            });
+        });
+
+        document.querySelectorAll('.kanban-drop').forEach(function (zone) {
+            zone.addEventListener('dragover', function (e) {
+                e.preventDefault();
+                zone.classList.add('drop-hover');
+            });
+            zone.addEventListener('dragleave', function () {
+                zone.classList.remove('drop-hover');
+            });
+            zone.addEventListener('drop', function (e) {
+                e.preventDefault();
+                zone.classList.remove('drop-hover');
+                if (!dragged) return;
+                document.getElementById('moveTaskId').value = dragged;
+                document.getElementById('moveTargetColumn').value = zone.getAttribute('data-drop-column');
+                moveForm.submit();
+            });
+        });
+    })();
+</script>
