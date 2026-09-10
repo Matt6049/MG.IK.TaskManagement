@@ -18,7 +18,13 @@ string groupMembersId = "group-" + @Model.Id;
                 </h5>
                 <small class="text-white-50">Utworzono: @Model.CreatedAt.ToString("dd.MM.yyyy")</small>
             </div>
-            <i class="bi bi-chevron-down"></i>
+            <div class="d-flex align-items-center gap-2">
+                <a asp-controller="Calendar" asp-action="Index" asp-route-groupId="@Model.Id"
+                   class="btn btn-sm btn-outline-light" onclick="event.stopPropagation()" title="Kalendarz grupy">
+                    <i class="bi bi-calendar3"></i>
+                </a>
+                <i class="bi bi-chevron-down"></i>
+            </div>
         </div>
     </div>
 
