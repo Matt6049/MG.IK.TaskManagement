@@ -1,29 +1,45 @@
-﻿<div class="container-fluid mt-4">
+@model KanbanTaskManagement.ViewModels.ProfileViewModel
+@{
+    ViewData["Title"] = "Profil";
+}
+
+<div class="container-fluid mt-4">
+    @if (TempData["ProfileMessage"] is string ok)
+    {
+        <div class="alert alert-success">@ok</div>
+    }
+    @if (TempData["ProfileError"] is string err)
+    {
+        <div class="alert alert-danger">@err</div>
+    }
+
     <div class="row">
         <div class="col-md-4 text-center border-end">
-            <i class="bi bi-person-circle" style="font-size: 12rem; color: #008080;"></i>
-            <h2 class="mt-3 fw-bold">TestowyUser123</h2>
-            <p class="text-muted">Konto utworzone: 16.06.2026</p>
+            <i class="bi bi-person-circle" style="font-size: 10rem; color: #008080;"></i>
+            <h2 class="mt-3 fw-bold">@Model.Username</h2>
+            <p class="text-muted mb-1">Konto utworzone: @Model.CreatedAt.ToString("dd.MM.yyyy")</p>
+            <p class="text-muted">Ostatnia aktywność: @Model.LastActive.ToString("dd.MM.yyyy HH:mm")</p>
         </div>
 
         <div class="col-md-8 ps-md-5">
             <h3 class="mb-4">Ustawienia profilu</h3>
 
-            <div class="mb-4 p-4 border rounded bg-light">
-                <label class="form-label fw-bold">Adres Email</label>
+            <form asp-controller="User" asp-action="ChangeEmail" method="post" class="mb-4 p-4 border rounded bg-light">
+                <label class="form-label fw-bold">Adres e-mail</label>
                 <div class="input-group">
-                    <input type="text" class="form-control form-control-lg" value="testowy@example.com" readonly>
-                    <button class="btn btn-outline-primary px-4">zmień</button>
+                    <input type="email" name="email" class="form-control form-control-lg" value="@Model.Email" placeholder="brak" />
+                    <button type="submit" class="btn btn-outline-primary px-4">Zapisz</button>
                 </div>
-            </div>
+                <div class="form-text">Zostaw puste, aby usunąć adres e-mail.</div>
+            </form>
 
-            <div class="mb-4 p-4 border rounded bg-light">
-                <label class="form-label fw-bold">Hasło</label>
-                <div class="input-group">
-                    <input type="password" class="form-control form-control-lg" value="********" readonly>
-                    <button class="btn btn-outline-primary px-4">zmień</button>
-                </div>
-            </div>
+            <form asp-controller="User" asp-action="ChangePassword" method="post" class="p-4 border rounded bg-light">
+                <label class="form-label fw-bold">Zmiana hasła</label>
+                <input type="password" name="CurrentPassword" class="form-control form-control-lg mb-2" placeholder="Obecne hasło" autocomplete="current-password" required />
+                <input type="password" name="NewPassword" class="form-control form-control-lg mb-2" placeholder="Nowe hasło (min. 6 znaków)" autocomplete="new-password" required />
+                <input type="password" name="ConfirmPassword" class="form-control form-control-lg mb-3" placeholder="Powtórz nowe hasło" autocomplete="new-password" required />
+                <button type="submit" class="btn btn-outline-primary px-4">Zmień hasło</button>
+            </form>
         </div>
     </div>
 </div>
