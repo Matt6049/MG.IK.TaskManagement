@@ -211,6 +211,5 @@ Przy starcie `DbInitializer` zakłada indeksy (`Boards.OwnerId`, `Boards.GroupId
 
 - Aplikacja działa po HTTP (bez HTTPS) — konfiguracja deweloperska.
 - Brak weryfikacji adresu e-mail.
-- Brak testów automatycznych.
-- `Views/Board/_KanbanTask.cshtml` — nieużywany plik.
+- Testy: `KanbanTaskManagement.Tests` (xUnit) pokrywa model uprawnień i kluczowe akcje kontrolerów tablic/grup/kalendarza na realnym lokalnym MongoDB; widoki, JS i pozostałe kontrolery (Account, User) bez pokrycia.
 - Pakiet `Markdown` w `.csproj` nie jest nigdzie wykorzystywany.

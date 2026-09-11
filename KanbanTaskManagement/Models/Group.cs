@@ -19,4 +19,10 @@ public class Group : IMongoDocument{
 
 	[BsonRequired]
 	public List<GroupMember> Members { get; set; } = [];
+
+	public GroupRole? RoleOf(ObjectId userId)
+		=> Members.Where(m => m.UserId == userId).Select(m => (GroupRole?) m.Role).FirstOrDefault();
+
+	public bool IsManagedBy(ObjectId userId)
+		=> RoleOf(userId) >= GroupRole.ADMIN;
 }

@@ -46,7 +46,7 @@ public class CalendarController : Controller {
 			if (!ObjectId.TryParse(groupId, out ObjectId gid))
 				return BadRequest();
 			var group = await _db.GroupCollection.Find(g => g.Id == gid).FirstOrDefaultAsync();
-			if (group is null || !group.Members.Any(m => m.UserId == userId))
+			if (group is null || group.RoleOf(userId) is null)
 				return NotFound();
 			ViewData["ScopeName"] = group.Name;
 		}

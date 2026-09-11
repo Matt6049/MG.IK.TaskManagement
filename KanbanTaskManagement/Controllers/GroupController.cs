@@ -58,7 +58,7 @@ public class GroupController : Controller {
 		if (group is null)
 			return NotFound();
 
-		var myRole = RoleOf(group, userId);
+		var myRole = group.RoleOf(userId);
 		if (myRole is null)
 			return Forbid();
 
@@ -167,15 +167,12 @@ public class GroupController : Controller {
 		if (group is null)
 			return (null, null, NotFound());
 
-		var myRole = RoleOf(group, userId);
+		var myRole = group.RoleOf(userId);
 		if (myRole is null || myRole < GroupRole.ADMIN)
 			return (group, myRole, Forbid());
 
 		return (group, myRole, null);
 	}
-
-	private static GroupRole? RoleOf(Group group, ObjectId userId)
-		=> group.Members.Where(m => m.UserId == userId).Select(m => (GroupRole?) m.Role).FirstOrDefault();
 
 	private static int OwnerCount(Group group)
 		=> group.Members.Count(m => m.Role == GroupRole.OWNER);

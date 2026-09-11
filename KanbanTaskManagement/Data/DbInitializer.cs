@@ -26,19 +26,26 @@ public static class DbInitializer {
 		if (boards.Count == 0)
 			return;
 
+		var ownerNames = boards
+			.Where(b => !string.IsNullOrEmpty(b.OwnerName))
+			.Select(b => b.OwnerName)
+			.Distinct()
+			.ToList();
+		var owners = await db.UserCollection
+			.Find(Builders<KanbanUser>.Filter.In(u => u.Username, ownerNames))
+			.ToListAsync();
+		var ownerIdByName = owners.ToDictionary(u => u.Username, u => u.Id);
+
+		var writes = new List<WriteModel<Board>>();
 		foreach (var board in boards) {
-			if (string.IsNullOrEmpty(board.OwnerName))
+			if (!ownerIdByName.TryGetValue(board.OwnerName, out var ownerId))
 				continue;
 
-			var owner = await db.UserCollection
-				.Find(u => u.Username == board.OwnerName)
-				.FirstOrDefaultAsync();
-			if (owner is null)
-				continue;
-
-			await db.BoardCollection.UpdateOneAsync(
-				b => b.Id == board.Id,
-				Builders<Board>.Update.Set(b => b.OwnerId, owner.Id));
+			writes.Add(new UpdateOneModel<Board>(
+				Builders<Board>.Filter.Eq(b => b.Id, board.Id),
+				Builders<Board>.Update.Set(b => b.OwnerId, ownerId)));
 		}
+		if (writes.Count > 0)
+			await db.BoardCollection.BulkWriteAsync(writes);
 	}
 }

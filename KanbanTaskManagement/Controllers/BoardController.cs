@@ -390,7 +390,7 @@ public class BoardController : Controller {
 			.ToListAsync();
 
 		return groups
-			.Where(g => g.Members.Any(m => m.UserId == userId && m.Role >= GroupRole.ADMIN))
+			.Where(g => g.IsManagedBy(userId))
 			.Select(g => new GroupOption { Id = g.Id, Name = g.Name ?? "(bez nazwy)" })
 			.ToList();
 	}
@@ -400,8 +400,7 @@ public class BoardController : Controller {
 			return false;
 
 		var group = await _db.GroupCollection.Find(g => g.Id == groupId).FirstOrDefaultAsync();
-		return group is not null
-			&& group.Members.Any(m => m.UserId == userId && m.Role >= GroupRole.ADMIN);
+		return group is not null && group.IsManagedBy(userId);
 	}
 
 	private static GroupRole ClampBoardRole(int requested)
