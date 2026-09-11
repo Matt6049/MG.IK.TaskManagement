@@ -1,4 +1,5 @@
 using KanbanTaskManagement.Data;
+using KanbanTaskManagement.Models;
 using KanbanTaskManagement.Repositories;
 using KanbanTaskManagement.Services;
 using KanbanTaskManagement.ViewModels;
@@ -25,19 +26,11 @@ public class DashboardController : Controller {
 			return Forbid();
 
 		var boards = await _boards.GetAccessibleBoards(userId);
-		var me = _currentUser.Username ?? "";
-		var today = DateTime.UtcNow.Date;
-
-		var myDue = boards
-			.SelectMany(b => b.Columns.SelectMany(c => c.Tasks))
-			.Where(t => t.CompletedAt is null && t.DueDate is not null && t.AssignedUsers.Contains(me))
-			.Select(t => t.DueDate!.Value.Date)
-			.ToList();
+		var myTasks = LoadMyTasks(boards);
 
 		return View(new DashboardViewModel {
 			Boards = boards,
-			OverdueCount = myDue.Count(d => d < today),
-			TodayCount = myDue.Count(d => d == today),
+			TaskBuckets = TaskBucketing.Summarize(myTasks, DateTime.UtcNow.Date),
 		});
 	}
 
@@ -46,9 +39,13 @@ public class DashboardController : Controller {
 			return Forbid();
 
 		var boards = await _boards.GetAccessibleBoards(userId);
+		return View(LoadMyTasks(boards));
+	}
+
+	private List<MyTaskItem> LoadMyTasks(IReadOnlyList<Board> boards) {
 		var me = _currentUser.Username ?? "";
 
-		var items = boards
+		return boards
 			.SelectMany(b => b.Columns.SelectMany(c => c.Tasks
 				.Where(t => t.AssignedUsers.Contains(me))
 				.Select(t => new MyTaskItem {
@@ -64,7 +61,5 @@ public class DashboardController : Controller {
 			.OrderBy(x => x.DueDate ?? DateTime.MaxValue)
 			.ThenByDescending(x => x.Priority)
 			.ToList();
-
-		return View(items);
 	}
 }

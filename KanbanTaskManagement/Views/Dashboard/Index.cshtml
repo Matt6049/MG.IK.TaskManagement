@@ -12,23 +12,98 @@
         .board-header:hover {
             filter: brightness(1.15);
         }
+
+    .viz-stacked-bar {
+        display: flex;
+        height: 22px;
+        border-radius: 5px;
+        overflow: hidden;
+        background: #fff;
+    }
+
+    .viz-seg {
+        margin-right: 2px;
+        min-width: 3px;
+        cursor: pointer;
+        transition: filter .15s ease-in-out;
+    }
+
+        .viz-seg:last-child {
+            margin-right: 0;
+        }
+
+        .viz-seg:hover, .viz-seg:focus-visible {
+            filter: brightness(1.12);
+            outline: none;
+        }
+
+    .viz-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .35rem 1.1rem;
+        font-size: .82rem;
+    }
+
+    .viz-legend-item {
+        display: flex;
+        align-items: center;
+        gap: .4rem;
+    }
+
+    .viz-swatch {
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        display: inline-block;
+        flex-shrink: 0;
+    }
+
+    .viz-tooltip {
+        position: fixed;
+        background: #0b0b0b;
+        color: #fff;
+        padding: .35rem .6rem;
+        border-radius: 6px;
+        font-size: .8rem;
+        pointer-events: none;
+        z-index: 1000;
+        white-space: nowrap;
+    }
 </style>
 
 <div class="container-fluid p-4">
-    @if (Model.OverdueCount > 0 || Model.TodayCount > 0)
+    @if (Model.TaskTotal > 0)
     {
-        <a asp-action="MyTasks" class="d-inline-flex align-items-center gap-2 text-decoration-none mb-3 p-2 px-3 rounded border">
-            <i class="bi bi-clipboard-check text-secondary"></i>
-            @if (Model.OverdueCount > 0)
-            {
-                <span class="badge bg-danger">Zaległe: @Model.OverdueCount</span>
-            }
-            @if (Model.TodayCount > 0)
-            {
-                <span class="badge bg-warning text-dark">Na dziś: @Model.TodayCount</span>
-            }
-            <span class="text-muted small">Zobacz moje zadania</span>
-        </a>
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-baseline mb-2">
+                    <h6 class="mb-0 text-secondary">Moje zadania — @Model.TaskTotal</h6>
+                    <a asp-action="MyTasks" class="small text-decoration-none">Zobacz wszystkie</a>
+                </div>
+                <div class="viz-stacked-bar" role="img" aria-label="Rozkład Twoich zadań według terminu i statusu">
+                    @foreach (var b in Model.TaskBuckets.Where(b => b.Count > 0))
+                    {
+                        <div class="viz-seg js-viz-seg" tabindex="0"
+                             style="flex-grow:@b.Count; background-color:@b.Color;"
+                             data-label="@b.Label" data-count="@b.Count"></div>
+                    }
+                </div>
+                <div class="viz-legend mt-2">
+                    @foreach (var b in Model.TaskBuckets.Where(b => b.Count > 0))
+                    {
+                        <span class="viz-legend-item">
+                            <span class="viz-swatch" style="background-color:@b.Color;"></span>
+                            @if (b.Icon is not null)
+                            {
+                                <i class="bi @b.Icon" style="color:@b.Color;"></i>
+                            }
+                            <span class="text-secondary">@b.Label</span>
+                            <span class="fw-semibold">@b.Count</span>
+                        </span>
+                    }
+                </div>
+            </div>
+        </div>
     }
 
     <div class="row mb-4 g-2">
@@ -107,5 +182,36 @@
                 board.style.display = name.includes(input) ? "" : "none";
             });
         }
+
+        (function () {
+            var tooltip = document.createElement('div');
+            tooltip.className = 'viz-tooltip';
+            tooltip.hidden = true;
+            document.body.appendChild(tooltip);
+
+            function showTooltip(el) {
+                var value = document.createElement('strong');
+                value.textContent = el.dataset.count;
+                var label = document.createTextNode(' ' + el.dataset.label);
+                tooltip.replaceChildren(value, label);
+                tooltip.hidden = false;
+
+                var rect = el.getBoundingClientRect();
+                tooltip.style.left = (rect.left + rect.width / 2 - tooltip.offsetWidth / 2) + 'px';
+                tooltip.style.top = (rect.top - tooltip.offsetHeight - 8) + 'px';
+            }
+
+            function hideTooltip() {
+                tooltip.hidden = true;
+            }
+
+            document.querySelectorAll('.js-viz-seg').forEach(function (seg) {
+                seg.addEventListener('pointerenter', function () { showTooltip(seg); });
+                seg.addEventListener('pointermove', function () { showTooltip(seg); });
+                seg.addEventListener('pointerleave', hideTooltip);
+                seg.addEventListener('focus', function () { showTooltip(seg); });
+                seg.addEventListener('blur', hideTooltip);
+            });
+        })();
     </script>
 }

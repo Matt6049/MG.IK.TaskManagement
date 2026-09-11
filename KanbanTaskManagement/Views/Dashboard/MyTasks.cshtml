@@ -2,18 +2,16 @@
 @{
     ViewData["Title"] = "Moje zadania";
     var today = DateTime.UtcNow.Date;
-    var weekEnd = today.AddDays(7);
+    var byBucket = Model.ToLookup(t => TaskBucketing.Of(t, today));
+    var done = byBucket[TaskBucket.Done].ToList();
 
-    var open = Model.Where(t => !t.Done).ToList();
-    var done = Model.Where(t => t.Done).ToList();
-
-    var buckets = new (string Title, string Css, IEnumerable<KanbanTaskManagement.ViewModels.MyTaskItem> Items)[]
+    var buckets = new (TaskBucket Bucket, string Title, string Css)[]
     {
-        ("Zaległe", "text-danger", open.Where(t => t.DueDate is { } d && d.Date < today)),
-        ("Na dziś", "text-warning", open.Where(t => t.DueDate is { } d && d.Date == today)),
-        ("W tym tygodniu", "", open.Where(t => t.DueDate is { } d && d.Date > today && d.Date <= weekEnd)),
-        ("Później", "", open.Where(t => t.DueDate is { } d && d.Date > weekEnd)),
-        ("Bez terminu", "text-muted", open.Where(t => t.DueDate is null)),
+        (TaskBucket.Overdue, "Zaległe", "text-danger"),
+        (TaskBucket.Today, "Na dziś", "text-warning"),
+        (TaskBucket.ThisWeek, "W tym tygodniu", ""),
+        (TaskBucket.Later, "Później", ""),
+        (TaskBucket.NoDueDate, "Bez terminu", "text-muted"),
     };
 }
 
@@ -27,7 +25,7 @@
 
     @foreach (var bucket in buckets)
     {
-        var items = bucket.Items.ToList();
+        var items = byBucket[bucket.Bucket].ToList();
         if (items.Count == 0)
         {
             continue;
