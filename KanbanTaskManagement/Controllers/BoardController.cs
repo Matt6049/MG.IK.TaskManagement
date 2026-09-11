@@ -75,6 +75,9 @@ public class BoardController : Controller {
 	[HttpPost]
 	[ValidateAntiForgeryToken]
 	public async Task<IActionResult> CreateTask(string boardId, int columnType, string taskName, string taskDescription, DateTime? startDate, DateTime? dueDate, int priority, string[]? assignedUsers) {
+		if (!Enum.IsDefined(typeof(ColumnType), columnType))
+			return BadRequest();
+
 		var (board, error) = await LoadForEdit(boardId);
 		if (error is not null)
 			return error;
@@ -126,6 +129,9 @@ public class BoardController : Controller {
 	[HttpPost]
 	[ValidateAntiForgeryToken]
 	public async Task<IActionResult> MoveTask(string boardId, string taskId, int targetColumn) {
+		if (!Enum.IsDefined(typeof(ColumnType), targetColumn))
+			return BadRequest();
+
 		var (_, error) = await LoadForEdit(boardId);
 		if (error is not null)
 			return error;

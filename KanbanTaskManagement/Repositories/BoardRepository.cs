@@ -146,7 +146,7 @@ public class BoardRepository : DocumentRepository<Board> {
 		if (!pull.IsAcknowledged || pull.ModifiedCount == 0)
 			return pull;
 
-		return await Collection.UpdateOneAsync(
+		var push = await Collection.UpdateOneAsync(
 			boardFilter,
 			Builders<Board>.Update.Push("Columns.$[col].Tasks", task),
 			new UpdateOptions {
@@ -154,14 +154,21 @@ public class BoardRepository : DocumentRepository<Board> {
 					new BsonDocumentArrayFilterDefinition<BsonDocument>(new BsonDocument("col.Type", (int) target)),
 				},
 			});
+
+		if (push.IsAcknowledged && push.ModifiedCount == 0)
+			return new NotFoundResult();
+
+		return push;
 	}
 
 	public async Task<ReadQueryResult<KanbanTask>> GetTaskById(string boardId, string taskId) {
-		if(!ObjectId.TryParse(taskId, out ObjectId _taskId))
+		if (!ObjectId.TryParse(boardId, out ObjectId _boardId)
+		|| !ObjectId.TryParse(taskId, out ObjectId _taskId))
 			return new BadRequestResult();
 
 		return await Collection
 			.AsQueryable()
+			.Where(board => board.Id == _boardId)
 			.SelectMany(board => board.Columns)
 			.SelectMany(col => col.Tasks)
 			.Where(task => task.Id == _taskId)

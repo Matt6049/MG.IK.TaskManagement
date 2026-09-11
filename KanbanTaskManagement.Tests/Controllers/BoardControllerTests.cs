@@ -172,6 +172,57 @@ public class BoardControllerTests : IClassFixture<MongoTestContext> {
 	}
 
 	[Fact]
+	public async Task MoveTask_ToUndefinedColumn_IsRejectedAndTaskStays() {
+		var ownerId = ObjectId.GenerateNewId();
+		var board = await InsertBoard(ownerId);
+		_user.UserId = ownerId;
+		await _controller.CreateTask(board.Id.ToString(), (int) ColumnType.BACKLOG, "Task", "", null, null, 0, null);
+		var created = await FetchBoard(board.Id);
+		var taskId = created.Columns.Single(c => c.Type == ColumnType.BACKLOG).Tasks.Single().Id;
+
+		var result = await _controller.MoveTask(board.Id.ToString(), taskId.ToString(), 99);
+
+		Assert.IsType<BadRequestResult>(result);
+		var reloaded = await FetchBoard(board.Id);
+		Assert.Single(reloaded.Columns.Single(c => c.Type == ColumnType.BACKLOG).Tasks);
+		Assert.All(reloaded.Columns.Where(c => c.Type != ColumnType.BACKLOG), c => Assert.Empty(c.Tasks));
+	}
+
+	[Fact]
+	public async Task CreateTask_ToUndefinedColumn_IsRejected() {
+		var ownerId = ObjectId.GenerateNewId();
+		var board = await InsertBoard(ownerId);
+		_user.UserId = ownerId;
+
+		var result = await _controller.CreateTask(board.Id.ToString(), 99, "Task", "", null, null, 0, null);
+
+		Assert.IsType<BadRequestResult>(result);
+		var reloaded = await FetchBoard(board.Id);
+		Assert.All(reloaded.Columns, c => Assert.Empty(c.Tasks));
+	}
+
+	[Fact]
+	public async Task UpdateTask_WithTaskIdFromAnotherBoard_DoesNotLeakOrEditIt() {
+		var ownerId = ObjectId.GenerateNewId();
+		var boardA = await InsertBoard(ownerId);
+		var boardB = await InsertBoard(ObjectId.GenerateNewId());
+		_user.UserId = ownerId;
+		await _controller.CreateTask(boardA.Id.ToString(), (int) ColumnType.BACKLOG, "Task A", "", null, null, 0, null);
+
+		_user.UserId = boardB.OwnerId;
+		await _controller.CreateTask(boardB.Id.ToString(), (int) ColumnType.BACKLOG, "Task B (secret)", "", null, null, 0, null);
+		var boardBReloaded = await FetchBoard(boardB.Id);
+		var secretTaskId = boardBReloaded.Columns.Single(c => c.Type == ColumnType.BACKLOG).Tasks.Single().Id;
+
+		_user.UserId = ownerId;
+		var result = await _controller.UpdateTask(boardA.Id.ToString(), secretTaskId.ToString(), "hijacked", "", null, null, 0, null);
+
+		Assert.IsType<NotFoundResult>(result);
+		var boardBAfter = await FetchBoard(boardB.Id);
+		Assert.Equal("Task B (secret)", boardBAfter.Columns.Single(c => c.Type == ColumnType.BACKLOG).Tasks.Single().Name);
+	}
+
+	[Fact]
 	public async Task SetTheme_InvalidHex_KeepsPreviousColor() {
 		var ownerId = ObjectId.GenerateNewId();
 		var board = await InsertBoard(ownerId);
