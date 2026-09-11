@@ -42,4 +42,7 @@ public class Board : IMongoDocument {
 				Type=ColumnType.DONE
 			}
 		];
+
+	public KanbanTask? FindTask(ObjectId taskId)
+		=> Columns.SelectMany(c => c.Tasks).FirstOrDefault(t => t.Id == taskId);
 }

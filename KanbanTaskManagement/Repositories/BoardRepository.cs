@@ -160,18 +160,4 @@ public class BoardRepository : DocumentRepository<Board> {
 
 		return push;
 	}
-
-	public async Task<ReadQueryResult<KanbanTask>> GetTaskById(string boardId, string taskId) {
-		if (!ObjectId.TryParse(boardId, out ObjectId _boardId)
-		|| !ObjectId.TryParse(taskId, out ObjectId _taskId))
-			return new BadRequestResult();
-
-		return await Collection
-			.AsQueryable()
-			.Where(board => board.Id == _boardId)
-			.SelectMany(board => board.Columns)
-			.SelectMany(col => col.Tasks)
-			.Where(task => task.Id == _taskId)
-			.FirstOrDefaultAsync();
-	}
 }

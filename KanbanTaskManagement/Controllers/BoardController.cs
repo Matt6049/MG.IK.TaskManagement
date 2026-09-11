@@ -110,15 +110,17 @@ public class BoardController : Controller {
 	[HttpPost]
 	[ValidateAntiForgeryToken]
 	public async Task<IActionResult> UpdateTask(string boardId, string taskId, string newName, string newDescription, DateTime? startDate, DateTime? dueDate, int priority, string[]? assignedUsers) {
+		if (!ObjectId.TryParse(taskId, out ObjectId taskObjectId))
+			return BadRequest();
+
 		var (board, error) = await LoadForEdit(boardId);
 		if (error is not null)
 			return error;
 
-		var taskRes = await repository.GetTaskById(boardId, taskId);
-		if (!taskRes.Ok)
-			return taskRes.ErrorStatus;
+		var task = board!.FindTask(taskObjectId);
+		if (task is null)
+			return NotFound();
 
-		KanbanTask task = taskRes.Result!;
 		task.Name = newName;
 		task.Description = newDescription;
 		task.StartDate = AsUtcDate(startDate);
@@ -138,17 +140,18 @@ public class BoardController : Controller {
 	public async Task<IActionResult> MoveTask(string boardId, string taskId, int targetColumn) {
 		if (!Enum.IsDefined(typeof(ColumnType), targetColumn))
 			return BadRequest();
+		if (!ObjectId.TryParse(taskId, out ObjectId taskObjectId))
+			return BadRequest();
 
-		var (_, error) = await LoadForEdit(boardId);
+		var (board, error) = await LoadForEdit(boardId);
 		if (error is not null)
 			return error;
 
-		var taskRes = await repository.GetTaskById(boardId, taskId);
-		if (!taskRes.Ok)
-			return taskRes.ErrorStatus;
+		var task = board!.FindTask(taskObjectId);
+		if (task is null)
+			return NotFound();
 
 		var target = (ColumnType) targetColumn;
-		KanbanTask task = taskRes.Result!;
 		task.CompletedAt = target == ColumnType.DONE ? DateTime.UtcNow : null;
 
 		var res = await repository.MoveTask(boardId, taskId, target, task);

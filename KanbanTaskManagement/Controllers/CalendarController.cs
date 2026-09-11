@@ -92,6 +92,8 @@ public class CalendarController : Controller {
 	public async Task<IActionResult> Reschedule(string boardId, string taskId, DateTime newDue) {
 		if (_currentUser.UserId is not { } userId)
 			return Forbid();
+		if (!ObjectId.TryParse(taskId, out ObjectId taskObjectId))
+			return BadRequest();
 
 		var boardRes = await _boards.GetById(boardId);
 		if (!boardRes.Ok)
@@ -101,11 +103,10 @@ public class CalendarController : Controller {
 		if (!access.CanEditTasks)
 			return Forbid();
 
-		var taskRes = await _boards.GetTaskById(boardId, taskId);
-		if (!taskRes.Ok)
-			return taskRes.ErrorStatus;
+		var task = boardRes.Result!.FindTask(taskObjectId);
+		if (task is null)
+			return NotFound();
 
-		var task = taskRes.Result!;
 		task.DueDate = DateTime.SpecifyKind(newDue.Date, DateTimeKind.Utc);
 
 		var res = await _boards.UpdateTask(boardId, task);
