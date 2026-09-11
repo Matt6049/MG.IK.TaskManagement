@@ -115,6 +115,18 @@ public class PermissionServiceTests : IClassFixture<MongoTestContext> {
 	}
 
 	[Fact]
+	public async Task BoardMemberWithOwnerRole_IsCappedToAdmin() {
+		var board = NewBoard(ObjectId.GenerateNewId());
+		var memberId = ObjectId.GenerateNewId();
+		board.Members.Add(new BoardMember { UserId = memberId, Role = GroupRole.OWNER });
+
+		var access = await _service.ResolveAsync(memberId, board);
+
+		Assert.Equal(GroupRole.ADMIN, access.Role);
+		Assert.False(access.CanDeleteBoard);
+	}
+
+	[Fact]
 	public async Task EffectiveRole_IsMaxOfBoardRoleAndGroupRole_WhenBoardRoleIsHigher() {
 		var groupId = ObjectId.GenerateNewId();
 		var userId = ObjectId.GenerateNewId();

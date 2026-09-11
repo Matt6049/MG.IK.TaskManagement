@@ -29,19 +29,26 @@ public class CalendarController : Controller {
 
 	[HttpGet]
 	public async Task<IActionResult> Index(string? boardId, string? groupId) {
+		if (_currentUser.UserId is not { } userId)
+			return Forbid();
+
 		ViewData["BoardId"] = boardId;
 		ViewData["GroupId"] = groupId;
 
-		if (_currentUser.UserId is { } userId) {
-			if (!string.IsNullOrEmpty(boardId)) {
-				var res = await _boards.GetById(boardId);
-				if (res.Ok && (await _permissions.ResolveAsync(userId, res.Result!)).CanView)
-					ViewData["ScopeName"] = res.Result!.Name;
-			} else if (!string.IsNullOrEmpty(groupId) && ObjectId.TryParse(groupId, out ObjectId gid)) {
-				var group = await _db.GroupCollection.Find(g => g.Id == gid).FirstOrDefaultAsync();
-				if (group is not null && group.Members.Any(m => m.UserId == userId))
-					ViewData["ScopeName"] = group.Name;
-			}
+		if (!string.IsNullOrEmpty(boardId)) {
+			var res = await _boards.GetById(boardId);
+			if (!res.Ok)
+				return res.ErrorStatus;
+			if (!(await _permissions.ResolveAsync(userId, res.Result!)).CanView)
+				return NotFound();
+			ViewData["ScopeName"] = res.Result!.Name;
+		} else if (!string.IsNullOrEmpty(groupId)) {
+			if (!ObjectId.TryParse(groupId, out ObjectId gid))
+				return BadRequest();
+			var group = await _db.GroupCollection.Find(g => g.Id == gid).FirstOrDefaultAsync();
+			if (group is null || !group.Members.Any(m => m.UserId == userId))
+				return NotFound();
+			ViewData["ScopeName"] = group.Name;
 		}
 
 		return View();

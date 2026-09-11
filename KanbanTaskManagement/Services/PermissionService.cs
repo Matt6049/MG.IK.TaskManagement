@@ -37,7 +37,7 @@ public class PermissionService : IPermissionService {
 
 		GroupRole? role = board.Members
 			.Where(m => m.UserId == userId)
-			.Select(m => (GroupRole?) m.Role)
+			.Select(m => (GroupRole?) (m.Role >= GroupRole.OWNER ? GroupRole.ADMIN : m.Role))
 			.FirstOrDefault();
 
 		if (board.GroupId != ObjectId.Empty) {
