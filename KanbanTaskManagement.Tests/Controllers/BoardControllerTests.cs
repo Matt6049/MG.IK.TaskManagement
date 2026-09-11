@@ -2,6 +2,7 @@ using KanbanTaskManagement.Controllers;
 using KanbanTaskManagement.Models;
 using KanbanTaskManagement.Services;
 using KanbanTaskManagement.Tests.Support;
+using KanbanTaskManagement.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -45,6 +46,33 @@ public class BoardControllerTests : IClassFixture<MongoTestContext> {
 		var board = await _mongo.Db.BoardCollection.Find(b => b.Name == "My board").FirstAsync();
 		Assert.Equal(ownerId, board.OwnerId);
 		Assert.Equal(3, board.Columns.Count);
+	}
+
+	[Fact]
+	public async Task Index_ForOwnerWithLinkedGroup_PopulatesAllSections() {
+		var ownerId = ObjectId.GenerateNewId();
+		var memberId = ObjectId.GenerateNewId();
+		var groupId = ObjectId.GenerateNewId();
+		await _mongo.Db.GroupCollection.InsertOneAsync(new Group {
+			Id = groupId,
+			Name = "Linked group",
+			Members = [new GroupMember { UserId = ownerId, Role = GroupRole.OWNER }],
+		});
+		var board = await InsertBoard(ownerId, new BoardMember { UserId = memberId, Role = GroupRole.WRITE });
+		await _mongo.Db.BoardCollection.UpdateOneAsync(
+			b => b.Id == board.Id, Builders<Board>.Update.Set(b => b.GroupId, groupId));
+		await _mongo.Db.UserCollection.InsertOneAsync(new KanbanUser {
+			Id = memberId, Username = "writer", PasswordHash = "x", PasswordSalt = "x",
+		});
+		_user.UserId = ownerId;
+
+		var result = await _controller.Index(board.Id.ToString());
+
+		var view = Assert.IsType<ViewResult>(result);
+		var vm = Assert.IsType<BoardDetailsViewModel>(view.Model);
+		Assert.Contains("writer", vm.Assignable);
+		Assert.Contains(vm.Members, m => m.IsOwner);
+		Assert.Equal("Linked group", vm.LinkedGroupName);
 	}
 
 	[Fact]

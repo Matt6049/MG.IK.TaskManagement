@@ -41,16 +41,23 @@ public class BoardController : Controller {
 		if (!access.CanView)
 			return NotFound();
 
-		var vm = new BoardDetailsViewModel { Board = board, Access = access };
-		if (access.CanEditTasks)
-			vm.Assignable = await LoadAssignableUsernames(board);
-		if (access.CanManageMembers)
-			vm.Members = await LoadMembers(board);
-		if (access.CanManageBoard) {
-			vm.Groups = await LoadManagedGroups();
-			if (board.GroupId != ObjectId.Empty)
-				vm.LinkedGroupName = (await _db.GroupCollection.Find(g => g.Id == board.GroupId).FirstOrDefaultAsync())?.Name;
-		}
+		var assignableTask = access.CanEditTasks ? LoadAssignableUsernames(board) : Task.FromResult<List<string>>([]);
+		var membersTask = access.CanManageMembers ? LoadMembers(board) : Task.FromResult<List<BoardMemberView>>([]);
+		var groupsTask = access.CanManageBoard ? LoadManagedGroups() : Task.FromResult<List<GroupOption>>([]);
+		var linkedGroupTask = access.CanManageBoard && board.GroupId != ObjectId.Empty
+			? _db.GroupCollection.Find(g => g.Id == board.GroupId).FirstOrDefaultAsync()
+			: Task.FromResult<Group?>(null);
+
+		await Task.WhenAll(assignableTask, membersTask, groupsTask, linkedGroupTask);
+
+		var vm = new BoardDetailsViewModel {
+			Board = board,
+			Access = access,
+			Assignable = assignableTask.Result,
+			Members = membersTask.Result,
+			Groups = groupsTask.Result,
+			LinkedGroupName = linkedGroupTask.Result?.Name,
+		};
 		return View(vm);
 	}
 
